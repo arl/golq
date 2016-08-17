@@ -48,7 +48,7 @@ import "math"
 
 // Database represents the spatial database.
 //
-// Typically one of these would be created (by a call to lq.CreateDatabase) for
+// Typically one of these would be created (by a call to .CreateDatabase) for
 // a given application.
 type DB struct {
 	// origin is the super-brick corner minimum coordinates
@@ -61,26 +61,26 @@ type DB struct {
 	divx, divy int
 
 	// pointer to an array of pointers, one for each bin
-	//lqClientProxy **bins
-	bins []*lqClientProxy
+	//ClientProxy **bins
+	bins []*ClientProxy
 
 	// extra bin for "everything else" (points outside super-brick)
-	other *lqClientProxy
+	other *ClientProxy
 }
 
 //This structure is a proxy for (and contains a pointer to) a client
 //(application) object in the spatial database.  One of these exists
 //for each client object.  This might be included within the
 //structure of a client object, or could be allocated separately.
-type lqClientProxy struct {
+type ClientProxy struct {
 	//previous object in this bin, or nil
-	prev *lqClientProxy
+	prev *ClientProxy
 
 	//next object in this bin, or nil
-	next *lqClientProxy
+	next *ClientProxy
 
 	//bin ID (pointer to pointer to bin contents list)
-	bin **lqClientProxy
+	bin **ClientProxy
 
 	//client object interface
 	object interface{}
@@ -110,58 +110,58 @@ func CreateDatabase(originx, originy, sizex, sizey float64, divx, divy int) *DB 
 		sizey:   sizey,
 		divx:    divx,
 		divy:    divy,
-		bins:    make([]*lqClientProxy, divx*divy),
+		bins:    make([]*ClientProxy, divx*divy),
 		other:   nil,
 	}
 }
 
 //Deallocate the memory used by the LQ database
-func DeleteDatabase(lq *DB) {
-	lq.bins = nil
-	lq = nil
+func DeleteDatabase(db *DB) {
+	db.bins = nil
+	db = nil
 }
 
 // Determine index into linear bin array given 3D bin indices
-func (lq *DB) binCoordsToBinIndex(ix, iy int) int {
-	return ((ix * lq.divy) + iy)
+func (db *DB) binCoordsToBinIndex(ix, iy int) int {
+	return ((ix * db.divy) + iy)
 }
 
 //Find the bin ID for a location in space.  The location is given in
 //terms of its XYZ coordinates.  The bin ID is a pointer to a pointer
 //to the bin contents list.
-func (lq *DB) BinForLocation(x, y float64) **lqClientProxy {
+func (db *DB) BinForLocation(x, y float64) **ClientProxy {
 	var i, ix, iy int
 
 	/* if point outside super-brick, return the "other" bin */
-	if x < lq.originx {
-		return &(lq.other)
+	if x < db.originx {
+		return &(db.other)
 	}
-	if y < lq.originy {
-		return &(lq.other)
+	if y < db.originy {
+		return &(db.other)
 	}
-	if x >= lq.originx+lq.sizex {
-		return &(lq.other)
+	if x >= db.originx+db.sizex {
+		return &(db.other)
 	}
-	if y >= lq.originy+lq.sizey {
-		return &(lq.other)
+	if y >= db.originy+db.sizey {
+		return &(db.other)
 	}
 
 	/* if point inside super-brick, compute the bin coordinates */
-	ix = (int)(((x - lq.originx) / float64(lq.sizex)) * float64(lq.divx))
-	iy = (int)(((y - lq.originy) / float64(lq.sizey)) * float64(lq.divy))
+	ix = (int)(((x - db.originx) / float64(db.sizex)) * float64(db.divx))
+	iy = (int)(((y - db.originy) / float64(db.sizey)) * float64(db.divy))
 
 	/* convert to linear bin number */
-	i = lq.binCoordsToBinIndex(ix, iy)
+	i = db.binCoordsToBinIndex(ix, iy)
 
 	/* return pointer to that bin */
-	return &(lq.bins[i])
+	return &(db.bins[i])
 }
 
-// The application needs to call this once on each lqClientProxy at
+// The application needs to call this once on each ClientProxy at
 // setup time to initialize its list pointers and associate the proxy
 // with its client object.
-func NewClientProxy(clientObject interface{}) *lqClientProxy {
-	return &lqClientProxy{
+func NewClientProxy(clientObject interface{}) *ClientProxy {
+	return &ClientProxy{
 		prev:   nil,
 		next:   nil,
 		bin:    nil,
@@ -171,7 +171,7 @@ func NewClientProxy(clientObject interface{}) *lqClientProxy {
 
 //Adds a given client object to a given bin, linking it into the bin
 //contents list.
-func (object *lqClientProxy) AddToBin(bin **lqClientProxy) {
+func (object *ClientProxy) AddToBin(bin **ClientProxy) {
 	/* if bin is currently empty */
 	if *bin == nil {
 		object.prev = nil
@@ -190,7 +190,7 @@ func (object *lqClientProxy) AddToBin(bin **lqClientProxy) {
 
 //Removes a given client object from its current bin, unlinking it
 //from the bin contents list.
-func (object *lqClientProxy) RemoveFromBin() {
+func (object *ClientProxy) RemoveFromBin() {
 	/* adjust pointers if object is currently in a bin */
 	if object.bin != nil {
 		/* If this object is at the head of the list, move the bin
@@ -222,9 +222,9 @@ func (object *lqClientProxy) RemoveFromBin() {
 //example, in an animation application, this would be called each
 //frame for every moving object.
 
-func (lq *DB) UpdateForNewLocation(object *lqClientProxy, x, y float64) {
+func (db *DB) UpdateForNewLocation(object *ClientProxy, x, y float64) {
 	/* find bin for new location */
-	newBin := lq.BinForLocation(x, y)
+	newBin := db.BinForLocation(x, y)
 
 	/* store location in client object, for future reference */
 	object.x = x
@@ -238,9 +238,9 @@ func (lq *DB) UpdateForNewLocation(object *lqClientProxy, x, y float64) {
 }
 
 // Given a bin's list of client proxies, traverse the list and invoke
-// the given lqCallBackFunction on each object that falls within the
+// the given CallBackFunction on each object that falls within the
 // search radius.
-func traverseBinClientObjectList(co *lqClientProxy, x, y, radiusSquared float64, fn CallBackFunction, state interface{}) {
+func traverseBinClientObjectList(co *ClientProxy, x, y, radiusSquared float64, fn CallBackFunction, state interface{}) {
 	for co != nil {
 		// compute distance (squared) from this client
 		// object to given locality sphere's centerpoint
@@ -258,24 +258,20 @@ func traverseBinClientObjectList(co *lqClientProxy, x, y, radiusSquared float64,
 	}
 }
 
-func (lq *DB) MapOverAllObjectsInLocalityClipped(x, y, radius float64,
+func (db *DB) MapOverAllObjectsInLocalityClipped(x, y, radius float64,
 	fn CallBackFunction,
 	clientQueryState interface{},
 	minBinX, minBinY, maxBinX, maxBinY int) {
 	var (
 		i, j                   int
 		iindex, jindex, kindex int
-		co                     *lqClientProxy
-		bin                    **lqClientProxy
+		co                     *ClientProxy
+		bin                    **ClientProxy
 	)
-	slab := lq.divy
+	slab := db.divy
 	istart := minBinX * slab
 	jstart := minBinY
 	radiusSquared := radius * radius
-
-	//#ifdef BOIDS_LQ_DEBUG
-	//if (lqAnnoteEnable) drawBallGL (x, y, z, radius);
-	//#endif
 
 	/* loop for x bins across diameter of sphere */
 	iindex = istart
@@ -284,12 +280,9 @@ func (lq *DB) MapOverAllObjectsInLocalityClipped(x, y, radius float64,
 		jindex = jstart
 		for j = minBinY; j <= maxBinY; j++ {
 			/* get current bin's client object list */
-			bin = &lq.bins[iindex+jindex]
+			bin = &db.bins[iindex+jindex]
 			co = *bin
 
-			//#ifdef BOIDS_LQ_DEBUG
-			//if (lqAnnoteEnable) drawBin (lq, bin);
-			//#endif
 			/* traverse current bin's client object list */
 			traverseBinClientObjectList(co, x, y,
 				radiusSquared,
@@ -304,11 +297,11 @@ func (lq *DB) MapOverAllObjectsInLocalityClipped(x, y, radius float64,
 //If the query region (sphere) extends outside of the "super-brick"
 //we need to check for objects in the catch-all "other" bin which
 //holds any object which are not inside the regular sub-bricks
-func (lq *DB) MapOverAllOutsideObjects(
+func (db *DB) MapOverAllOutsideObjects(
 	x, y, radius float64,
 	fn CallBackFunction,
 	clientQueryState interface{}) {
-	co := lq.other
+	co := db.other
 	radiusSquared := radius * radius
 
 	/* traverse the "other" bin's client object list */
@@ -324,37 +317,37 @@ func (lq *DB) MapOverAllOutsideObjects(
 //within this sphere are identified and the function is applied to
 //them.  The application-supplied function takes three arguments:
 
-//(1) a void* pointer to an lqClientProxy's "object".
+//(1) a void* pointer to an ClientProxy's "object".
 //(2) the square of the distance from the center of the search
 //locality sphere (x,y,z) to object's key-point.
 //(3) a void* pointer to the caller-supplied "client query state"
 //object -- typically NULL, but can be used to store state
-//between calls to the lqCallBackFunction.
+//between calls to the CallBackFunction.
 
 //This routine uses the LQ database to quickly reject any objects in
 //bins which do not overlap with the sphere of interest.  Incremental
 //calculation of index values is used to efficiently traverse the
 //bins of interest.
 
-func (lq *DB) MapOverAllObjectsInLocality(
+func (db *DB) MapOverAllObjectsInLocality(
 	x, y, radius float64,
 	fn CallBackFunction,
 	clientQueryState interface{}) {
 	partlyOut := false
-	completelyOutside := (((x + radius) < lq.originx) || ((y + radius) < lq.originy) || ((x - radius) >= lq.originx+lq.sizex) || ((y - radius) >= lq.originy+lq.sizey))
+	completelyOutside := (((x + radius) < db.originx) || ((y + radius) < db.originy) || ((x - radius) >= db.originx+db.sizex) || ((y - radius) >= db.originy+db.sizey))
 
 	/* is the sphere completely outside the "super brick"? */
 	if completelyOutside {
-		lq.MapOverAllOutsideObjects(x, y, radius, fn,
+		db.MapOverAllOutsideObjects(x, y, radius, fn,
 			clientQueryState)
 		return
 	}
 
 	/* compute min and max bin coordinates for each dimension */
-	minBinX := (int)((((x - radius) - lq.originx) / lq.sizex) * float64(lq.divx))
-	minBinY := (int)((((y - radius) - lq.originy) / lq.sizey) * float64(lq.divy))
-	maxBinX := (int)((((x + radius) - lq.originx) / lq.sizex) * float64(lq.divx))
-	maxBinY := (int)((((y + radius) - lq.originy) / lq.sizey) * float64(lq.divy))
+	minBinX := (int)((((x - radius) - db.originx) / db.sizex) * float64(db.divx))
+	minBinY := (int)((((y - radius) - db.originy) / db.sizey) * float64(db.divy))
+	maxBinX := (int)((((x + radius) - db.originx) / db.sizex) * float64(db.divx))
+	maxBinY := (int)((((y + radius) - db.originy) / db.sizey) * float64(db.divy))
 
 	/* clip bin coordinates */
 	if minBinX < 0 {
@@ -365,22 +358,22 @@ func (lq *DB) MapOverAllObjectsInLocality(
 		partlyOut = true
 		minBinY = 0
 	}
-	if maxBinX >= lq.divx {
+	if maxBinX >= db.divx {
 		partlyOut = true
-		maxBinX = lq.divx - 1
+		maxBinX = db.divx - 1
 	}
-	if maxBinY >= lq.divy {
+	if maxBinY >= db.divy {
 		partlyOut = true
-		maxBinY = lq.divy - 1
+		maxBinY = db.divy - 1
 	}
 
 	/* map function over outside objects if necessary (if clipped) */
 	if partlyOut {
-		lq.MapOverAllOutsideObjects(x, y, radius, fn, clientQueryState)
+		db.MapOverAllOutsideObjects(x, y, radius, fn, clientQueryState)
 	}
 
 	/* map function over objects in bins */
-	lq.MapOverAllObjectsInLocalityClipped(x, y,
+	db.MapOverAllObjectsInLocalityClipped(x, y,
 		radius,
 		fn,
 		clientQueryState,
@@ -388,14 +381,14 @@ func (lq *DB) MapOverAllObjectsInLocality(
 		maxBinX, maxBinY)
 }
 
-type lqFindNearestState struct {
+type findNearestState struct {
 	ignoreObject       interface{}
 	nearestObject      interface{}
 	minDistanceSquared float64
 }
 
-func lqFindNearestHelper(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
-	fns := clientQueryState.(*lqFindNearestState)
+func findNearestHelper(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
+	fns := clientQueryState.(*findNearestState)
 
 	/* do nothing if this is the "ignoreObject" */
 	if fns.ignoreObject != clientObject {
@@ -416,25 +409,25 @@ func lqFindNearestHelper(clientObject interface{}, distanceSquared float64, clie
 //database, since otherwise it would be its own nearest neighbor.
 //The function returns a void* pointer to the nearest object, or
 //NULL if none is found.
-func (lq *DB) FindNearestNeighborWithinRadius(x, y, radius float64,
+func (db *DB) FindNearestNeighborWithinRadius(x, y, radius float64,
 	ignoreObject interface{}) interface{} {
 	/* initialize search state */
-	var lqFNS lqFindNearestState
-	lqFNS.nearestObject = nil
-	lqFNS.ignoreObject = ignoreObject
-	lqFNS.minDistanceSquared = math.MaxFloat64
+	var fns findNearestState
+	fns.nearestObject = nil
+	fns.ignoreObject = ignoreObject
+	fns.minDistanceSquared = math.MaxFloat64
 
 	/* map search helper function over all objects within radius */
-	lq.MapOverAllObjectsInLocality(x, y,
+	db.MapOverAllObjectsInLocality(x, y,
 		radius,
-		lqFindNearestHelper,
-		&lqFNS)
+		findNearestHelper,
+		&fns)
 
 	/* return nearest object found, if any */
-	return lqFNS.nearestObject
+	return fns.nearestObject
 }
 
-func (proxy *lqClientProxy) MapOverAllObjectsInBin(
+func (proxy *ClientProxy) MapOverAllObjectsInBin(
 	fn CallBackFunction,
 	clientQueryState interface{}) {
 	/* walk down proxy list, applying call-back function to each one */
@@ -445,28 +438,27 @@ func (proxy *lqClientProxy) MapOverAllObjectsInBin(
 }
 
 //Apply a user-supplied function to all objects in the database,
-//regardless of locality (cf lqMapOverAllObjectsInLocality)
-
-func (lq *DB) MapOverAllObjects(fn CallBackFunction,
+//regardless of locality (cf MapOverAllObjectsInLocality)
+func (db *DB) MapOverAllObjects(fn CallBackFunction,
 	clientQueryState interface{}) {
-	bincount := lq.divx * lq.divy
+	bincount := db.divx * db.divy
 	for i := 0; i < bincount; i++ {
-		lq.bins[i].MapOverAllObjectsInBin(fn, clientQueryState)
+		db.bins[i].MapOverAllObjectsInBin(fn, clientQueryState)
 	}
-	lq.other.MapOverAllObjectsInBin(fn, clientQueryState)
+	db.other.MapOverAllObjectsInBin(fn, clientQueryState)
 }
 
-func (bin *lqClientProxy) RemoveAllObjectsInBin() {
+func (bin *ClientProxy) RemoveAllObjectsInBin() {
 	for bin != nil {
 		bin.RemoveFromBin()
 	}
 }
 
 //Removes (all proxies for) all objects from all bins
-func (lq *DB) RemoveAllObjects() {
-	bincount := lq.divx * lq.divy
+func (db *DB) RemoveAllObjects() {
+	bincount := db.divx * db.divy
 	for i := 0; i < bincount; i++ {
-		lq.bins[i].RemoveAllObjectsInBin()
+		db.bins[i].RemoveAllObjectsInBin()
 	}
-	lq.other.RemoveAllObjectsInBin()
+	db.other.RemoveAllObjectsInBin()
 }
