@@ -12,7 +12,7 @@
 // (for example, constructing a Delaunay triangulation of the point set) may not
 // be practical.
 //
-// The implementation is a "bin lattice": a 3d rectangular array of brick-shaped
+// The implementation is a "bin lattice": a 2d rectangular array of brick-shaped
 // (rectangular parallelepipeds) regions of space.  Each region is represented by
 // a pointer to a (possibly empty) doubly- linked list of objects.  All of these
 // sub-bricks are the same size.  All bricks are aligned with the global
@@ -61,7 +61,6 @@ type DB struct {
 	divx, divy int
 
 	// pointer to an array of pointers, one for each bin
-	//ClientProxy **bins
 	bins []*ClientProxy
 
 	// extra bin for "everything else" (points outside super-brick)
