@@ -427,7 +427,7 @@ func (db *DB) FindNearestNeighborWithinRadius(x, y, radius float64,
 	return fns.nearestObject
 }
 
-func (proxy *ClientProxy) MapOverAllObjectsInBin(
+func (proxy *ClientProxy) mapOverAllObjectsInBin(
 	fn CallBackFunction,
 	clientQueryState interface{}) {
 	/* walk down proxy list, applying call-back function to each one */
@@ -443,9 +443,9 @@ func (db *DB) MapOverAllObjects(fn CallBackFunction,
 	clientQueryState interface{}) {
 	bincount := db.divx * db.divy
 	for i := 0; i < bincount; i++ {
-		db.bins[i].MapOverAllObjectsInBin(fn, clientQueryState)
+		db.bins[i].mapOverAllObjectsInBin(fn, clientQueryState)
 	}
-	db.other.MapOverAllObjectsInBin(fn, clientQueryState)
+	db.other.mapOverAllObjectsInBin(fn, clientQueryState)
 }
 
 func (bin *ClientProxy) RemoveAllObjectsInBin() {
