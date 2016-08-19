@@ -1,4 +1,4 @@
-// Package lq implements a spatial database which stores objects each of which is
+// This utility is a spatial database which stores objects each of which is
 // associated with a 3d point (a location in a 3d space).  The points serve as
 // the "search key" for the associated object.  It is intended to efficiently
 // answer "sphere inclusion" queries, also known as range queries: basically
@@ -12,27 +12,27 @@
 // (for example, constructing a Delaunay triangulation of the point set) may not
 // be practical.
 //
-// The implementation is a "bin lattice": a 2d rectangular array of brick-shaped
+// The implementation is a "bin lattice": a 3d rectangular array of brick-shaped
 // (rectangular parallelepipeds) regions of space.  Each region is represented by
-// a pointer to a (possibly empty) doubly-linked list of objects.  All of these
+// a pointer to a (possibly empty) doubly- linked list of objects.  All of these
 // sub-bricks are the same size.  All bricks are aligned with the global
 // coordinate axes.
 //
 // Terminology used here: the region of space associated with a bin is called a
-// sub-brick.  The collection of all sub-bricks is called the super-brick. The
+// sub-brick.  The collection of all sub-bricks is called the super-brick.  The
 // super-brick should be specified to surround the region of space in which
-// (almost) all the key-points will exist. If key-points move outside the
+// (almost) all the key-points will exist.  If key-points move outside the
 // super-brick everything will continue to work, but without the speed advantage
-// provided by the spatial subdivision. For more details about how to specify
+// provided by the spatial subdivision.  For more details about how to specify
 // the super-brick's position, size and subdivisions see CreateDatabase below.
 //
 // Overview of usage: an application using this facility would first create a
 // database with CreateDatabase.  For each client object the application wants to
 // put in the database it creates a ClientProxy and initializes it with
-// InitClientProxy. When a client object moves, the application calls
-// UpdateForNewLocation. To perform a query MapOverAllObjectsInLocality is
+// InitClientProxy.  When a client object moves, the application calls
+// UpdateForNewLocation.  To perform a query MapOverAllObjectsInLocality is
 // passed an application-supplied call-back function to be applied to all client
-// objects in the locality. See CallBackFunction below for more detail.  The
+// objects in the locality.  See CallBackFunction below for more detail.  The
 // FindNearestNeighborWithinRadius function can be used to find a single nearest
 // neighbor using the database.
 //
@@ -89,18 +89,19 @@ type ClientProxy struct {
 	x, y float64
 }
 
-// type for a pointer to a function used to map over client objects
-type CallBackFunction func(clientObject interface{}, distanceSquared float64, clientQueryState interface{})
+/* type for a pointer to a function used to map over client objects */
+//func CallBackFunction(clientObject interface{}, distanceSquared float64, clientQueryState interface{})
+type CallBackFunction func(interface{}, float64, interface{})
 
-// Allocate and initialize an LQ database, return a pointer to it.
-// The application needs to call this before using the LQ facility.
-// The nine parameters define the properties of the "super-brick":
-// (1) origin: coordinates of one corner of the super-brick, its
-// minimum x, y and z extent.
-// (2) size: the width, height and depth of the super-brick.
-// (3) the number of subdivisions (sub-bricks) along each axis.
-// This routine also allocates the bin array, and initialize its
-// contents.
+//Allocate and initialize an LQ database, return a pointer to it.
+//The application needs to call this before using the LQ facility.
+//The nine parameters define the properties of the "super-brick":
+//(1) origin: coordinates of one corner of the super-brick, its
+//minimum x, y and z extent.
+//(2) size: the width, height and depth of the super-brick.
+//(3) the number of subdivisions (sub-bricks) along each axis.
+//This routine also allocates the bin array, and initialize its
+//contents.
 func CreateDatabase(originx, originy, sizex, sizey float64, divx, divy int) *DB {
 	return &DB{
 		originx: originx,
