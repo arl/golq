@@ -89,9 +89,8 @@ type ClientProxy struct {
 	x, y float64
 }
 
-/* type for a pointer to a function used to map over client objects */
-//func CallBackFunction(clientObject interface{}, distanceSquared float64, clientQueryState interface{})
-type CallBackFunction func(interface{}, float64, interface{})
+//type for a pointer to a function used to map over client objects
+type CallBackFunction func(clientObject interface{}, distanceSquared float64, clientQueryState interface{})
 
 //Allocate and initialize an LQ database, return a pointer to it.
 //The application needs to call this before using the LQ facility.
