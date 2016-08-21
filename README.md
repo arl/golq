@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/aurelien-rainone/golq.svg?branch=master)](https://travis-ci.org/aurelien-rainone/golq)
 # golq: 2D locality queries in Go
 
 **golq is a 2D spatial database library implemented with a bin lattice**
