@@ -27,17 +27,26 @@
 // the super-brick's position, size and subdivisions see CreateDatabase below.
 //
 // Overview of usage: an application using this facility would first create a
-// database with CreateDatabase. For each client object the application wants to
-// put in the database it creates a ClientProxy with NewClientProxy. When a
-// client object moves, the application calls ClientProxy.UpdateForNewLocation.
+// database with:
+//  db := golq.CreateDatabase().
+// For each client object the application wants to put in the database it
+// creates a ClientProxy with :
+//  p := golq.NewClientProxy(clientObj).
+// When a client object moves, the application calls :
+//  p.UpdateForNewLocation()
 // To perform a query, DB.MapOverAllObjectsInLocality is passed an
 // application-supplied call-back function to be applied to all client objects
-// in the locality. See CallBackFunction below for more detail. The
-// DB.FindNearestNeighborWithinRadius function can be used to find a single
+// in the locality. See CallBackFunction below for more detail.
+//  myFunc := CallBackFunction
+//  DB.MapOverAllObjectsInLocality(x, y, radius, myFunc, nil)
+// The DB.FindNearestNeighborWithinRadius function can be used to find a single
 // nearest neighbor using the database. Note that "locality query" is also
 // known as neighborhood query, neighborhood search, near neighbor search, and
 // range query.
-
+//
+// Author: Aurélien Rainone
+//
+// Based on original work of: Craig Reynolds
 package lq
 
 import "math"
