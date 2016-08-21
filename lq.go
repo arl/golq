@@ -260,23 +260,21 @@ func (db *DB) MapOverAllObjectsInLocalityClipped(x, y, radius float64,
 	fn CallBackFunction,
 	clientQueryState interface{},
 	minBinX, minBinY, maxBinX, maxBinY int) {
+
 	var (
-		i, j                   int
-		iindex, jindex, kindex int
-		co                     *ClientProxy
-		bin                    **ClientProxy
+		iindex, jindex int
+		co             *ClientProxy
+		bin            **ClientProxy
 	)
-	slab := db.divy
-	istart := minBinX * slab
-	jstart := minBinY
+
 	radiusSquared := radius * radius
 
 	/* loop for x bins across diameter of sphere */
-	iindex = istart
-	for i = minBinX; i <= maxBinX; i++ {
+	iindex = minBinX * db.divy
+	for i := minBinX; i <= maxBinX; i++ {
 		/* loop for y bins across diameter of sphere */
-		jindex = jstart
-		for j = minBinY; j <= maxBinY; j++ {
+		jindex = minBinY
+		for j := minBinY; j <= maxBinY; j++ {
 			/* get current bin's client object list */
 			bin = &db.bins[iindex+jindex]
 			co = *bin
@@ -286,9 +284,9 @@ func (db *DB) MapOverAllObjectsInLocalityClipped(x, y, radius float64,
 				radiusSquared,
 				fn,
 				clientQueryState)
-			kindex += 1
+			jindex += 1
 		}
-		iindex += slab
+		iindex += db.divy
 	}
 }
 
