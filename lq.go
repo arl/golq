@@ -388,80 +388,80 @@ func NewClientProxy(clientObject interface{}) *ClientProxy {
 
 // AddToBin adds a given client object to a given bin, linking it into the
 // bin contents list.
-func (object *ClientProxy) AddToBin(bin **ClientProxy) {
+func (cp *ClientProxy) AddToBin(bin **ClientProxy) {
 	// if bin is currently empty
 	if *bin == nil {
-		object.prev = nil
-		object.next = nil
-		*bin = object
+		cp.prev = nil
+		cp.next = nil
+		*bin = cp
 	} else {
-		object.prev = nil
-		object.next = *bin
-		(*bin).prev = object
-		*bin = object
+		cp.prev = nil
+		cp.next = *bin
+		(*bin).prev = cp
+		*bin = cp
 	}
 
 	// record bin ID in proxy object
-	object.bin = bin
+	cp.bin = bin
 }
 
 // RemoveFromBin removes a given client object from its current bin, unlinking
 // it from the bin contents list.
-func (object *ClientProxy) RemoveFromBin() {
+func (cp *ClientProxy) RemoveFromBin() {
 	// adjust pointers if object is currently in a bin
-	if object.bin != nil {
+	if cp.bin != nil {
 		// If this object is at the head of the list, move the bin
 		//  pointer to the next item in the list (might be nil).
-		if *(object.bin) == object {
-			*(object.bin) = object.next
+		if *(cp.bin) == cp {
+			*(cp.bin) = cp.next
 		}
 
 		// If there is a prev object, link its "next" pointer to the
 		// object after this one.
-		if object.prev != nil {
-			object.prev.next = object.next
+		if cp.prev != nil {
+			cp.prev.next = cp.next
 		}
 
 		// If there is a next object, link its "prev" pointer to the
 		// object before this one.
-		if object.next != nil {
-			object.next.prev = object.prev
+		if cp.next != nil {
+			cp.next.prev = cp.prev
 		}
 	}
 
 	// Null out prev, next and bin pointers of this object.
-	object.prev = nil
-	object.next = nil
-	object.bin = nil
+	cp.prev = nil
+	cp.next = nil
+	cp.bin = nil
 }
 
 // Given a bin's list of client proxies, traverse the list and invoke
 // the given CallBackFunction on each object that falls within the
 // search radius.
-func traverseBinClientObjectList(co *ClientProxy, x, y, radiusSquared float64, fn CallBackFunction, state interface{}) {
-	for co != nil {
+func traverseBinClientObjectList(cp *ClientProxy, x, y, radiusSquared float64, fn CallBackFunction, state interface{}) {
+	for cp != nil {
 		// compute distance (squared) from this client
 		// object to given locality circle's centerpoint
-		dx := x - co.x
-		dy := y - co.y
+		dx := x - cp.x
+		dy := y - cp.y
 		distanceSquared := (dx * dx) + (dy * dy)
 
 		// apply function if client object within sphere
 		if distanceSquared < radiusSquared {
-			fn(co.object, distanceSquared, state)
+			fn(cp.object, distanceSquared, state)
 		}
 
 		// consider next client object in bin list
-		co = co.next
+		cp = cp.next
 	}
 }
 
-func (proxy *ClientProxy) mapOverAllObjectsInBin(
+func (cp *ClientProxy) mapOverAllObjectsInBin(
 	fn CallBackFunction,
 	clientQueryState interface{}) {
 	// walk down proxy list, applying call-back function to each one
-	for proxy != nil {
-		fn(proxy.object, 0, clientQueryState)
-		proxy = proxy.next
+	for cp != nil {
+		fn(cp.object, 0, clientQueryState)
+		cp = cp.next
 	}
 }
