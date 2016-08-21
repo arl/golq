@@ -448,9 +448,14 @@ func (db *DB) MapOverAllObjects(fn CallBackFunction,
 	db.other.mapOverAllObjectsInBin(fn, clientQueryState)
 }
 
-func (bin *ClientProxy) removeAllObjectsInBin() {
-	for bin != nil {
-		bin.RemoveFromBin()
+func removeAllObjectsInBin(pbin **ClientProxy) {
+	for {
+		bin := *pbin
+		if bin != nil {
+			bin.RemoveFromBin()
+		} else {
+			break
+		}
 	}
 }
 
@@ -458,7 +463,10 @@ func (bin *ClientProxy) removeAllObjectsInBin() {
 func (db *DB) RemoveAllObjects() {
 	bincount := db.divx * db.divy
 	for i := 0; i < bincount; i++ {
-		db.bins[i].removeAllObjectsInBin()
+		removeAllObjectsInBin(&(db.bins[i]))
 	}
-	db.other.removeAllObjectsInBin()
+
+	if db.other != nil {
+		removeAllObjectsInBin(&db.other)
+	}
 }

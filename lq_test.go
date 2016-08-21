@@ -92,7 +92,7 @@ func TestAddObjectToDatabase(t *testing.T) {
 	}
 }
 
-func TestRemoveObjectFromDatabase(t *testing.T) {
+func TestRemoveObject(t *testing.T) {
 	var flagtests = []struct {
 		orgx, orgy float64
 		szx, szy   float64
@@ -121,6 +121,38 @@ func TestRemoveObjectFromDatabase(t *testing.T) {
 			db.MapOverAllObjects(retrieveAllIds, ids)
 
 			ids.assertNotContains(t, 1)
+		})
+	}
+}
+
+func TestRemoveAllObjects(t *testing.T) {
+	var flagtests = []struct {
+		orgx, orgy float64
+		szx, szy   float64
+		divx, divy int
+		ptx, pty   float64
+		tested     string
+	}{
+		{0, 0, 10, 10, 5, 5, 5, 5, "inside super brick"},
+		{0, 0, 10, 10, 5, 5, -1, -1, "outside super brick"},
+	}
+
+	for _, tt := range flagtests {
+
+		t.Run(tt.tested, func(t *testing.T) {
+
+			db := CreateDatabase(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
+
+			p1, p2 := newEntity(1), newEntity(2)
+			ids := idMap{}
+			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
+			db.UpdateForNewLocation(p2, tt.ptx, tt.pty)
+			//fmt.Println(1)
+			db.RemoveAllObjects()
+			//fmt.Println(2)
+
+			db.MapOverAllObjects(retrieveAllIds, ids)
+			ids.assertEmpty(t)
 		})
 	}
 }
@@ -167,7 +199,6 @@ func TestObjectLocality(t *testing.T) {
 
 			ids := idMap{}
 			db.MapOverAllObjectsInLocality(tt.cx, tt.cy, tt.cr, retrieveAllIds, ids)
-			fmt.Println("map content: ", ids)
 			ids.assertContainedIs(t, 1, tt.r1)
 			ids.assertContainedIs(t, 2, tt.r2)
 			ids.assertContainedIs(t, 3, tt.r3)
