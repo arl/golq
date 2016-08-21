@@ -6,18 +6,9 @@ import (
 	"testing"
 )
 
-type entity struct {
-	id    int
-	proxy ClientProxy
-}
-
-// create our mock entity for test, it's just an int
+// create the test client proxy
 func newEntity(id int) *ClientProxy {
-	ent := &entity{
-		id: id,
-	}
-	ent.proxy = *NewClientProxy(ent)
-	return &ent.proxy
+	return NewClientProxy(id)
 }
 
 // convenience types
@@ -48,21 +39,20 @@ func (m idMap) assertContainedIs(t *testing.T, id int, contains bool) {
 
 // CallBackFunction that copies every found entity id into the provided idMap or idList
 func retrieveAllIds(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
-	ent := clientObject.(*entity)
 	switch clientQueryState.(type) {
 	case idList:
 		s := clientQueryState.(idList)
-		s = append(s, ent.id)
+		s = append(s, clientObject.(int))
 	case idMap:
 		m := clientQueryState.(idMap)
-		m[ent.id] = true
+		m[clientObject.(int)] = true
 	}
 }
 
 // CallBackFunction that prints all entities, for debugging
 func printAllEntities(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
-	ent := clientObject.(*entity)
-	log.Printf("printAllEntities: ent:%+v %f\n", ent, distanceSquared)
+	id := clientObject.(int)
+	log.Printf("printAllEntities: id:%+v %f\n", id, distanceSquared)
 }
 
 func TestDeleteDatabase(t *testing.T) {
