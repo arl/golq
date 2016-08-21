@@ -11,11 +11,14 @@ func newEntity(id int) *ClientProxy {
 	return NewClientProxy(id)
 }
 
-// convenience types
-type (
-	idMap  map[int]bool // map of ints, acting as a set of int
-	idList []int        // slice of ints
-)
+// map of ints, acting as a set of int
+type idMap map[int]bool
+
+func (m idMap) assertEmpty(t *testing.T) {
+	if len(m) > 0 {
+		t.Errorf("ids map was expected to be empty, instead it contains: %v", m)
+	}
+}
 
 func (m idMap) assertContains(t *testing.T, id int) {
 	if _, ok := m[id]; !ok {
@@ -37,16 +40,10 @@ func (m idMap) assertContainedIs(t *testing.T, id int, contains bool) {
 	}
 }
 
-// CallBackFunction that copies every found entity id into the provided idMap or idList
+// CallBackFunction that copies every found entity id into the provided idMap
 func retrieveAllIds(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
-	switch clientQueryState.(type) {
-	case idList:
-		s := clientQueryState.(idList)
-		s = append(s, clientObject.(int))
-	case idMap:
-		m := clientQueryState.(idMap)
-		m[clientObject.(int)] = true
-	}
+	m := clientQueryState.(idMap)
+	m[clientObject.(int)] = true
 }
 
 // CallBackFunction that prints all entities, for debugging
