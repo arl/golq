@@ -72,10 +72,6 @@ type DB struct {
 	other *ClientProxy
 }
 
-// CallBackFunction is the type of the function used to map over client
-// objects.
-type CallBackFunction func(clientObject interface{}, distanceSquared float64, clientQueryState interface{})
-
 // CreateDatabase initializes and returns an lq database.
 //
 // The application needs to call this before using the lq facility. The six
@@ -160,6 +156,10 @@ func (db *DB) UpdateForNewLocation(object *ClientProxy, x, y float64) {
 	}
 }
 
+// CallBackFunction is the type of the function used to map over client
+// objects.
+type CallBackFunction func(clientObject interface{}, distanceSquared float64, clientQueryState interface{})
+
 // MapOverAllObjects applies a user-supplied function to all objects in the
 // database, regardless of locality (see DB.MapOverAllObjectsInLocality)
 func (db *DB) MapOverAllObjects(fn CallBackFunction,
@@ -187,28 +187,6 @@ func (db *DB) RemoveAllObjects() {
 	if db.other != nil {
 		removeAllObjectsInBin(&db.other)
 	}
-}
-
-// ClientProxy is a proxy for a client (application) object in the spatial
-// database.
-//
-// One of these exists for each client object. This might be included within
-// the structure of a client object, or could be allocated separately.
-type ClientProxy struct {
-	// previous object in this bin, or nil
-	prev *ClientProxy
-
-	// next object in this bin, or nil
-	next *ClientProxy
-
-	// bin ID (pointer to pointer to bin contents list)
-	bin **ClientProxy
-
-	// client object interface
-	object interface{}
-
-	// the object's location ("key point") used for spatial sorting
-	x, y float64
 }
 
 // This subroutine of MapOverAllObjectsInLocality efficiently traverses of
@@ -379,6 +357,28 @@ func (db *DB) FindNearestNeighborWithinRadius(x, y, radius float64,
 
 	// return nearest object found, if any
 	return fns.nearestObject
+}
+
+// ClientProxy is a proxy for a client (application) object in the spatial
+// database.
+//
+// One of these exists for each client object. This might be included within
+// the structure of a client object, or could be allocated separately.
+type ClientProxy struct {
+	// previous object in this bin, or nil
+	prev *ClientProxy
+
+	// next object in this bin, or nil
+	next *ClientProxy
+
+	// bin ID (pointer to pointer to bin contents list)
+	bin **ClientProxy
+
+	// client object interface
+	object interface{}
+
+	// the object's location ("key point") used for spatial sorting
+	x, y float64
 }
 
 // NewClientProxy creates a new client object proxy.
