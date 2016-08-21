@@ -202,3 +202,36 @@ func TestBinRelinking(t *testing.T) {
 		ids.assertContainedIs(t, 3, i != 3)
 	}
 }
+
+func TestNearestNeighbor(t *testing.T) {
+	var flagtests = []struct {
+		p1x, p1y, p2x, p2y, p3x, p3y float64     // the 3 points in the db
+		cx, cy                       float64     // search circle center
+		cr                           float64     // search circle radius
+		ignore                       interface{} // ignored object
+		res                          interface{} // expected nearest object
+	}{
+		{1, 1, 1, 2, 1, 3, 1, 1, 0.1, nil, 1},
+		{1, 1, 1, 2, 1, 3, 1, 1, 0.1, 1, nil},
+		{1, 1, 1, 2, 1, 3, 1, 1, 1.1, 1, 2},
+	}
+	for i, tt := range flagtests {
+
+		t.Run(fmt.Sprintf("nearest test %d", i), func(t *testing.T) {
+
+			db := CreateDatabase(0, 0, 10, 10, 5, 5)
+
+			p1 := newEntity(1)
+			p2 := newEntity(2)
+			p3 := newEntity(3)
+			db.UpdateForNewLocation(p1, tt.p1x, tt.p1y)
+			db.UpdateForNewLocation(p2, tt.p2x, tt.p2y)
+			db.UpdateForNewLocation(p3, tt.p3x, tt.p3y)
+
+			res := db.FindNearestNeighborWithinRadius(tt.cx, tt.cy, tt.cr, tt.ignore)
+			if res != tt.res {
+				t.Errorf("nearest neighbour is %v but was expected to be: %v", res, tt.res)
+			}
+		})
+	}
+}
