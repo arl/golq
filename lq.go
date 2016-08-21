@@ -63,28 +63,6 @@ type DB struct {
 	other *ClientProxy
 }
 
-// ClientProxy is a proxy for a client (application) object in the spatial
-// database.
-//
-// One of these exists for each client object. This might be included within
-// the structure of a client object, or could be allocated separately.
-type ClientProxy struct {
-	// previous object in this bin, or nil
-	prev *ClientProxy
-
-	// next object in this bin, or nil
-	next *ClientProxy
-
-	// bin ID (pointer to pointer to bin contents list)
-	bin **ClientProxy
-
-	// client object interface
-	object interface{}
-
-	// the object's location ("key point") used for spatial sorting
-	x, y float64
-}
-
 // CallBackFunction is the type of the function used to map over client
 // objects.
 type CallBackFunction func(clientObject interface{}, distanceSquared float64, clientQueryState interface{})
@@ -153,69 +131,6 @@ func (db *DB) binForLocation(x, y float64) **ClientProxy {
 	return &(db.bins[i])
 }
 
-// NewClientProxy creates a new client object proxy.
-//
-// The application needs to call this once on each ClientProxy at
-// setup time to initialize its list pointers and associate the proxy
-// with its client object.
-func NewClientProxy(clientObject interface{}) *ClientProxy {
-	return &ClientProxy{
-		prev:   nil,
-		next:   nil,
-		bin:    nil,
-		object: clientObject,
-	}
-}
-
-// AddToBin adds a given client object to a given bin, linking it into the
-// bin contents list.
-func (object *ClientProxy) AddToBin(bin **ClientProxy) {
-	// if bin is currently empty
-	if *bin == nil {
-		object.prev = nil
-		object.next = nil
-		*bin = object
-	} else {
-		object.prev = nil
-		object.next = *bin
-		(*bin).prev = object
-		*bin = object
-	}
-
-	// record bin ID in proxy object
-	object.bin = bin
-}
-
-// RemoveFromBin removes a given client object from its current bin, unlinking
-// it from the bin contents list.
-func (object *ClientProxy) RemoveFromBin() {
-	// adjust pointers if object is currently in a bin
-	if object.bin != nil {
-		// If this object is at the head of the list, move the bin
-		//  pointer to the next item in the list (might be nil).
-		if *(object.bin) == object {
-			*(object.bin) = object.next
-		}
-
-		// If there is a prev object, link its "next" pointer to the
-		// object after this one.
-		if object.prev != nil {
-			object.prev.next = object.next
-		}
-
-		// If there is a next object, link its "prev" pointer to the
-		// object before this one.
-		if object.next != nil {
-			object.next.prev = object.prev
-		}
-	}
-
-	// Null out prev, next and bin pointers of this object.
-	object.prev = nil
-	object.next = nil
-	object.bin = nil
-}
-
 // UpdateForNewLocation updates a proxy object position in the database.
 //
 // It should be called for each client object every time its location
@@ -236,25 +151,55 @@ func (db *DB) UpdateForNewLocation(object *ClientProxy, x, y float64) {
 	}
 }
 
-// Given a bin's list of client proxies, traverse the list and invoke
-// the given CallBackFunction on each object that falls within the
-// search radius.
-func traverseBinClientObjectList(co *ClientProxy, x, y, radiusSquared float64, fn CallBackFunction, state interface{}) {
-	for co != nil {
-		// compute distance (squared) from this client
-		// object to given locality circle's centerpoint
-		dx := x - co.x
-		dy := y - co.y
-		distanceSquared := (dx * dx) + (dy * dy)
-
-		// apply function if client object within sphere
-		if distanceSquared < radiusSquared {
-			fn(co.object, distanceSquared, state)
-		}
-
-		// consider next client object in bin list
-		co = co.next
+// MapOverAllObjects applies a user-supplied function to all objects in the
+// database, regardless of locality (see DB.MapOverAllObjectsInLocality)
+func (db *DB) MapOverAllObjects(fn CallBackFunction,
+	clientQueryState interface{}) {
+	bincount := db.divx * db.divy
+	for i := 0; i < bincount; i++ {
+		db.bins[i].mapOverAllObjectsInBin(fn, clientQueryState)
 	}
+	db.other.mapOverAllObjectsInBin(fn, clientQueryState)
+}
+
+// RemoveAllObjects removes (all proxies for) all objects from all bins.
+func (db *DB) RemoveAllObjects() {
+	removeAllObjectsInBin := func(pbin **ClientProxy) {
+		for *pbin != nil {
+			(*pbin).RemoveFromBin()
+		}
+	}
+
+	bincount := db.divx * db.divy
+	for i := 0; i < bincount; i++ {
+		removeAllObjectsInBin(&(db.bins[i]))
+	}
+
+	if db.other != nil {
+		removeAllObjectsInBin(&db.other)
+	}
+}
+
+// ClientProxy is a proxy for a client (application) object in the spatial
+// database.
+//
+// One of these exists for each client object. This might be included within
+// the structure of a client object, or could be allocated separately.
+type ClientProxy struct {
+	// previous object in this bin, or nil
+	prev *ClientProxy
+
+	// next object in this bin, or nil
+	next *ClientProxy
+
+	// bin ID (pointer to pointer to bin contents list)
+	bin **ClientProxy
+
+	// client object interface
+	object interface{}
+
+	// the object's location ("key point") used for spatial sorting
+	x, y float64
 }
 
 // This subroutine of MapOverAllObjectsInLocality efficiently traverses of
@@ -427,6 +372,90 @@ func (db *DB) FindNearestNeighborWithinRadius(x, y, radius float64,
 	return fns.nearestObject
 }
 
+// NewClientProxy creates a new client object proxy.
+//
+// The application needs to call this once on each ClientProxy at
+// setup time to initialize its list pointers and associate the proxy
+// with its client object.
+func NewClientProxy(clientObject interface{}) *ClientProxy {
+	return &ClientProxy{
+		prev:   nil,
+		next:   nil,
+		bin:    nil,
+		object: clientObject,
+	}
+}
+
+// AddToBin adds a given client object to a given bin, linking it into the
+// bin contents list.
+func (object *ClientProxy) AddToBin(bin **ClientProxy) {
+	// if bin is currently empty
+	if *bin == nil {
+		object.prev = nil
+		object.next = nil
+		*bin = object
+	} else {
+		object.prev = nil
+		object.next = *bin
+		(*bin).prev = object
+		*bin = object
+	}
+
+	// record bin ID in proxy object
+	object.bin = bin
+}
+
+// RemoveFromBin removes a given client object from its current bin, unlinking
+// it from the bin contents list.
+func (object *ClientProxy) RemoveFromBin() {
+	// adjust pointers if object is currently in a bin
+	if object.bin != nil {
+		// If this object is at the head of the list, move the bin
+		//  pointer to the next item in the list (might be nil).
+		if *(object.bin) == object {
+			*(object.bin) = object.next
+		}
+
+		// If there is a prev object, link its "next" pointer to the
+		// object after this one.
+		if object.prev != nil {
+			object.prev.next = object.next
+		}
+
+		// If there is a next object, link its "prev" pointer to the
+		// object before this one.
+		if object.next != nil {
+			object.next.prev = object.prev
+		}
+	}
+
+	// Null out prev, next and bin pointers of this object.
+	object.prev = nil
+	object.next = nil
+	object.bin = nil
+}
+
+// Given a bin's list of client proxies, traverse the list and invoke
+// the given CallBackFunction on each object that falls within the
+// search radius.
+func traverseBinClientObjectList(co *ClientProxy, x, y, radiusSquared float64, fn CallBackFunction, state interface{}) {
+	for co != nil {
+		// compute distance (squared) from this client
+		// object to given locality circle's centerpoint
+		dx := x - co.x
+		dy := y - co.y
+		distanceSquared := (dx * dx) + (dy * dy)
+
+		// apply function if client object within sphere
+		if distanceSquared < radiusSquared {
+			fn(co.object, distanceSquared, state)
+		}
+
+		// consider next client object in bin list
+		co = co.next
+	}
+}
+
 func (proxy *ClientProxy) mapOverAllObjectsInBin(
 	fn CallBackFunction,
 	clientQueryState interface{}) {
@@ -434,34 +463,5 @@ func (proxy *ClientProxy) mapOverAllObjectsInBin(
 	for proxy != nil {
 		fn(proxy.object, 0, clientQueryState)
 		proxy = proxy.next
-	}
-}
-
-// MapOverAllObjects applies a user-supplied function to all objects in the
-// database, regardless of locality (see DB.MapOverAllObjectsInLocality)
-func (db *DB) MapOverAllObjects(fn CallBackFunction,
-	clientQueryState interface{}) {
-	bincount := db.divx * db.divy
-	for i := 0; i < bincount; i++ {
-		db.bins[i].mapOverAllObjectsInBin(fn, clientQueryState)
-	}
-	db.other.mapOverAllObjectsInBin(fn, clientQueryState)
-}
-
-// RemoveAllObjects removes (all proxies for) all objects from all bins.
-func (db *DB) RemoveAllObjects() {
-	removeAllObjectsInBin := func(pbin **ClientProxy) {
-		for *pbin != nil {
-			(*pbin).RemoveFromBin()
-		}
-	}
-
-	bincount := db.divx * db.divy
-	for i := 0; i < bincount; i++ {
-		removeAllObjectsInBin(&(db.bins[i]))
-	}
-
-	if db.other != nil {
-		removeAllObjectsInBin(&db.other)
 	}
 }
