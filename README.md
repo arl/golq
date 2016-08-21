@@ -11,7 +11,7 @@ questions like:
 >Which objects are within a radius R of the location L?
 
 In this context, **efficiently means significantly faster** than the naive,
-**brute force *O(n)*** testing of all known points. Additionally it is assumed that
+**brute force** ***O(n)*** testing of all known points. Additionally it is assumed that
 the objects move along unpredictable paths, so that extensive preprocessing
 (for example, constructing a Delaunay triangulation of the point set) may not
 be practical.
