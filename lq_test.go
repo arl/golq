@@ -187,3 +187,31 @@ func TestObjectLocality(t *testing.T) {
 		})
 	}
 }
+
+func TestBinRelinking(t *testing.T) {
+
+	for i := range []int{1, 2, 3} {
+		db := CreateDatabase(0, 0, 10, 10, 5, 5)
+		p1 := newEntity(1)
+		p2 := newEntity(2)
+		p3 := newEntity(3)
+		db.UpdateForNewLocation(p1, 5, 5)
+		db.UpdateForNewLocation(p2, 5, 5)
+		db.UpdateForNewLocation(p3, 5, 5)
+
+		switch i {
+		case 1:
+			p1.RemoveFromBin()
+		case 2:
+			p2.RemoveFromBin()
+		case 3:
+			p3.RemoveFromBin()
+		}
+
+		ids := idMap{}
+		db.MapOverAllObjectsInLocality(5, 5, 1, retrieveAllIds, ids)
+		ids.assertContainedIs(t, 1, i != 1)
+		ids.assertContainedIs(t, 2, i != 2)
+		ids.assertContainedIs(t, 3, i != 3)
+	}
+}
