@@ -30,7 +30,7 @@ This library is loosely inspired by the C language lq utility in
 ## License
 
 golq is open source software distributed in accordance with the MIT
-License (http://www.opensource.org/licenses/mit-license.php), which says:
+License, which says:
 
 Copyright (c) 2016 Aurélien Rainone
 
