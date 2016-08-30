@@ -164,9 +164,8 @@ type CallBackFunction func(clientObject interface{}, distanceSquared float64, cl
 // database, regardless of locality (see DB.MapOverAllObjectsInLocality)
 func (db *DB) MapOverAllObjects(fn CallBackFunction,
 	clientQueryState interface{}) {
-	bincount := db.divx * db.divy
-	for i := 0; i < bincount; i++ {
-		db.bins[i].mapOverAllObjectsInBin(fn, clientQueryState)
+	for _, bin := range db.bins {
+		bin.mapOverAllObjectsInBin(fn, clientQueryState)
 	}
 	db.other.mapOverAllObjectsInBin(fn, clientQueryState)
 }
@@ -179,8 +178,7 @@ func (db *DB) RemoveAllObjects() {
 		}
 	}
 
-	bincount := db.divx * db.divy
-	for i := 0; i < bincount; i++ {
+	for i := range db.bins {
 		removeAllObjectsInBin(&(db.bins[i]))
 	}
 
