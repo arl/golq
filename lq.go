@@ -28,10 +28,10 @@
 //
 // Overview of usage: an application using this facility would first create a
 // database with:
-//  db := golq.CreateDatabase().
+//  db := CreateDatabase().
 // For each client object the application wants to put in the database it
 // creates a ClientProxy with :
-//  p := golq.NewClientProxy(clientObj).
+//  p := NewClientProxy(clientObj).
 // When a client object moves, the application calls :
 //  p.UpdateForNewLocation()
 // To perform a query, DB.MapOverAllObjectsInLocality is passed an
