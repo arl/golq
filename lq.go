@@ -1,7 +1,7 @@
 // This library is a spatial database which stores objects each of which is
 // associated with a 2d point (a location in a 2d space). The points serve as
 // the "search key" for the associated object. It is intended to efficiently
-// answer "circle inclusion" queries, also known as range queries: basically
+// answer "circle inclusion" queries, also known as "range queries": basically
 // questions like:
 //
 // Which objects are within a radius R of the location L?
