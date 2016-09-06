@@ -450,9 +450,7 @@ func traverseBinClientObjectList(cp *ClientProxy, x, y, radiusSquared float64, f
 	for cp != nil {
 		// compute distance (squared) from this client
 		// object to given locality circle's centerpoint
-		dx := x - cp.x
-		dy := y - cp.y
-		distanceSquared := (dx * dx) + (dy * dy)
+		distanceSquared := (x-cp.x)*(x-cp.x) + (y-cp.y)*(y-cp.y)
 
 		// apply function if client object within sphere
 		if distanceSquared < radiusSquared {
