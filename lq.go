@@ -35,10 +35,12 @@
 // When a client object moves, the application calls :
 //  p.UpdateForNewLocation()
 // To perform a query, DB.MapOverAllObjectsInLocality is passed an
-// application-supplied call-back function to be applied to all client objects
-// in the locality. See CallBackFunction below for more detail.
-//  myFunc := CallBackFunction
-//  DB.MapOverAllObjectsInLocality(x, y, radius, myFunc, nil)
+// application-supplied ObjCallback function to be applied to all client
+// objects in the locality. See ObjCallback below for more detail.
+//  func myObjCallback (clientObj interface{}, distSquare float64, queryState interface{}) {
+//      // do something with clientObj...
+//  }
+//  DB.MapOverAllObjectsInLocality(x, y, radius, myObjCallback, nil)
 // The DB.FindNearestNeighborWithinRadius function can be used to find a single
 // nearest neighbor using the database. Note that "locality query" is also
 // known as neighborhood query, neighborhood search, near neighbor search, and
