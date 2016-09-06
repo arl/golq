@@ -156,9 +156,18 @@ func (db *DB) UpdateForNewLocation(object *ClientProxy, x, y float64) {
 	}
 }
 
-// CallBackFunction is the type of the function used to map over client
-// objects.
-type CallBackFunction func(clientObject interface{}, distanceSquared float64, clientQueryState interface{})
+// CallBackFunction is the type of the user-supplied function used to map over
+// client objects.
+//
+// An instance of CallBackFunction takes three arguments:
+//
+//    - an empty interface corresponding to a ClientProxy's "object".
+//    - the square of the distance from the center of the search locality
+//      circle (x,y) to object's key-point.
+//    - an empty interface corresponding to the caller-supplied "client query
+//      state" object, typically nil, but can be used to store state between
+//      calls to the CallBackFunction.
+type CallBackFunction func(clientObj interface{}, distSquare float64, queryState interface{})
 
 // MapOverAllObjects applies a user-supplied function to all objects in the
 // database, regardless of locality (see DB.MapOverAllObjectsInLocality)
@@ -241,21 +250,12 @@ func (db *DB) mapOverAllOutsideObjects(
 		queryState)
 }
 
-// MapOverAllObjectsInLocality applies an application-specific function to all
-// objects in a certain locality.
+// MapOverAllObjectsInLocality applies an application-specific CallBackFunction
+// to all objects in a certain locality.
 //
 // The locality is specified as a circle with a given center and radius. All
 // objects whose location (key-point) is within this circle are identified and
-// the function is applied to them. The application-supplied function takes
-// three arguments:
-//
-//    - an interface to a ClientProxy's "object".
-//    - the square of the distance from the center of the search
-//      locality circle (x,y) to object's key-point.
-//    - an interface to the caller-supplied "client query state" object,
-//      typically nil, but can be used to store state between calls to the
-//      CallBackFunction.
-//
+// the function is applied to them.//
 // This routine uses the LQ database to quickly reject any objects in bins which
 // do not overlap with the circle of interest. Incremental calculation of index
 // values is used to efficiently traverse the bins of interest.
