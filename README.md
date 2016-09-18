@@ -1,6 +1,7 @@
-# golq: 2D locality queries in Go &nbsp;&nbsp; [![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/aurelien-rainone/golq) [![Build Status](https://travis-ci.org/aurelien-rainone/golq.svg?branch=master)](https://travis-ci.org/aurelien-rainone/golq) [![Coverage Status](https://coveralls.io/repos/github/aurelien-rainone/golq/badge.svg?branch=master)](https://coveralls.io/github/aurelien-rainone/golq?branch=master)
+# golq
+[![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/aurelien-rainone/golq) [![Build Status](https://travis-ci.org/aurelien-rainone/golq.svg?branch=master)](https://travis-ci.org/aurelien-rainone/golq) [![Coverage Status](https://coveralls.io/repos/github/aurelien-rainone/golq/badge.svg?branch=master)](https://coveralls.io/github/aurelien-rainone/golq?branch=master)
 
-**golq is a 2D spatial database library**
+**2D locality queries in Go**
 
 This utility is a spatial database which stores objects each of which is
 associated with a 2D point (a location in a 2D space). The points serve as
