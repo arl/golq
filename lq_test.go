@@ -147,9 +147,7 @@ func TestRemoveAllObjects(t *testing.T) {
 			ids := idMap{}
 			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
 			db.UpdateForNewLocation(p2, tt.ptx, tt.pty)
-			//fmt.Println(1)
 			db.RemoveAllObjects()
-			//fmt.Println(2)
 
 			db.MapOverAllObjects(retrieveAllIds, ids)
 			ids.assertEmpty(t)
