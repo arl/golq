@@ -16,19 +16,19 @@ type idMap map[int]bool
 
 func (m idMap) assertEmpty(t *testing.T) {
 	if len(m) > 0 {
-		t.Errorf("ids map was expected to be empty, instead it contains: %v", m)
+		t.Errorf("want empty ids map, got : %v", m)
 	}
 }
 
 func (m idMap) assertContains(t *testing.T, id int) {
 	if _, ok := m[id]; !ok {
-		t.Errorf("ids map was expected to contain id: %d", id)
+		t.Errorf("want ids map contains id %d, didn't get it", id)
 	}
 }
 
 func (m idMap) assertNotContains(t *testing.T, id int) {
 	if _, ok := m[id]; ok {
-		t.Errorf("ids map was expected to not contain id: %d", id)
+		t.Errorf("want ids map not contains id %d, got it", id)
 	}
 }
 
@@ -238,7 +238,7 @@ func TestNearestNeighbor(t *testing.T) {
 		cx, cy                       float64     // search circle center
 		cr                           float64     // search circle radius
 		ignore                       interface{} // ignored object
-		res                          interface{} // expected nearest object
+		want                         interface{} // expected nearest object
 	}{
 		{1, 1, 1, 2, 1, 3, 1, 1, 0.1, nil, 1},
 		{1, 1, 1, 2, 1, 3, 1, 1, 0.1, 1, nil},
@@ -257,9 +257,9 @@ func TestNearestNeighbor(t *testing.T) {
 			db.UpdateForNewLocation(p2, tt.p2x, tt.p2y)
 			db.UpdateForNewLocation(p3, tt.p3x, tt.p3y)
 
-			res := db.FindNearestNeighborWithinRadius(tt.cx, tt.cy, tt.cr, tt.ignore)
-			if res != tt.res {
-				t.Errorf("nearest neighbour is %v but was expected to be: %v", res, tt.res)
+			got := db.FindNearestNeighborWithinRadius(tt.cx, tt.cy, tt.cr, tt.ignore)
+			if got != tt.want {
+				t.Errorf("want nearest neighbour %v, got %v", tt.want, got)
 			}
 		})
 	}
