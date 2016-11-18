@@ -1,6 +1,6 @@
-// This library is a spatial database which stores objects each of which is
-// associated with a 2d point (a location in a 2d space). The points serve as
-// the "search key" for the associated object. It is intended to efficiently
+// Package lq implements a spatial database which stores objects each of which
+// is associated with a 2d point (a location in a 2d space). The points serve
+// as the "search key" for the associated object. It is intended to efficiently
 // answer "circle inclusion" queries, also known as "range queries": basically
 // questions like:
 //
@@ -229,7 +229,7 @@ func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64,
 				radiusSquared,
 				fn,
 				queryState)
-			jindex += 1
+			jindex++
 		}
 		iindex += db.divy
 	}
