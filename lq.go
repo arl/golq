@@ -96,12 +96,6 @@ func CreateDatabase(originx, originy, sizex, sizey float64, divx, divy int) *DB 
 	}
 }
 
-// DeleteDatabase unreferences the memory used by the lq database
-func DeleteDatabase(db *DB) {
-	db.bins = nil
-	db = nil
-}
-
 // Determine index into linear bin array given 2D bin indices
 func (db *DB) binCoordsToBinIndex(ix, iy int) int {
 	return ((ix * db.divy) + iy)

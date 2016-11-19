@@ -53,14 +53,6 @@ func printAllEntities(clientObject interface{}, distanceSquared float64, clientQ
 	log.Printf("printAllEntities: id:%+v %f\n", id, distanceSquared)
 }
 
-func TestDeleteDatabase(t *testing.T) {
-	db := CreateDatabase(0, 0, 1, 1, 1, 1)
-	DeleteDatabase(db)
-	if db.bins != nil {
-		t.Error("db.bins was non-nil when it should have been nil")
-	}
-}
-
 func TestAddObjectToDatabase(t *testing.T) {
 	var flagtests = []struct {
 		orgx, orgy float64
