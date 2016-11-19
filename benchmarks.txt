@@ -1,0 +1,33 @@
+BenchmarkBruteForce10-2                          2000000               819 ns/op
+BenchmarkBruteForce50-2                           500000              3570 ns/op
+BenchmarkBruteForce100-2                          200000              6958 ns/op
+BenchmarkBruteForce200-2                          100000             13564 ns/op
+BenchmarkBruteForce500-2                           50000             33037 ns/op
+BenchmarkBruteForce1000-2                          20000             66053 ns/op
+BenchmarkNearestNeighbourLq10Radius2-2           3000000               546 ns/op
+BenchmarkNearestNeighbourLq50Radius2-2           2000000               788 ns/op
+BenchmarkNearestNeighbourLq100Radius2-2          1000000              1025 ns/op
+BenchmarkNearestNeighbourLq200Radius2-2          1000000              1434 ns/op
+BenchmarkNearestNeighbourLq500Radius2-2           500000              2431 ns/op
+BenchmarkNearestNeighbourLq1000Radius2-2          300000              4242 ns/op
+BenchmarkNearestNeighbourLq10Radius4-2           2000000               987 ns/op
+BenchmarkNearestNeighbourLq50Radius4-2           1000000              1480 ns/op
+BenchmarkNearestNeighbourLq100Radius4-2          1000000              1985 ns/op
+BenchmarkNearestNeighbourLq200Radius4-2           500000              2974 ns/op
+BenchmarkNearestNeighbourLq500Radius4-2           300000              5427 ns/op
+BenchmarkNearestNeighbourLq1000Radius4-2          200000              9927 ns/op
+BenchmarkObjectsInLocalityLq10Radius2-2          3000000               410 ns/op
+BenchmarkObjectsInLocalityLq50Radius2-2          3000000               570 ns/op
+BenchmarkObjectsInLocalityLq100Radius2-2         2000000               731 ns/op
+BenchmarkObjectsInLocalityLq200Radius2-2         1000000              1051 ns/op
+BenchmarkObjectsInLocalityLq500Radius2-2         1000000              1854 ns/op
+BenchmarkObjectsInLocalityLq1000Radius2-2         500000              3418 ns/op
+BenchmarkObjectsInLocalityLq10Radius4-2          2000000               808 ns/op
+BenchmarkObjectsInLocalityLq50Radius4-2          1000000              1102 ns/op
+BenchmarkObjectsInLocalityLq100Radius4-2         1000000              1440 ns/op
+BenchmarkObjectsInLocalityLq200Radius4-2         1000000              2169 ns/op
+BenchmarkObjectsInLocalityLq500Radius4-2          300000              4000 ns/op
+BenchmarkObjectsInLocalityLq1000Radius4-2         200000              7881 ns/op
+PASS
+ok      github.com/aurelien-rainone/golq        53.587s
+
