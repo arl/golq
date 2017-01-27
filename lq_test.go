@@ -304,15 +304,15 @@ func benchmarkBruteForce(b *testing.B, numPts int) {
 		// Brute force looks at all entities and would perform
 		// something (keep the nearest, accumulate into a slice,
 		// pass to a callback) with the ones wich distance is
-		// within the search raidus. Nevertheless the square root
+		// within the search radius. Nevertheless the square root
 		// calculation is not performed and nothing is done on
 		// objects actually within search radius, so this time is
 		// not measured. Anyway the complexity of brute force
 		// doesn't lie there, but it is caused by the fact that
 		// every distance to the search point has to computed.
 		for _, ent := range ents {
-			// set to dummy variable to not let the compiler
-			// optimize this statement out.
+			// compute the squared distance and assigns it to not let the
+			// compiler optimize it away.
 			dummy = (x-ent.x)*(x-ent.x) + (y-ent.y)*(y-ent.y)
 		}
 	}
