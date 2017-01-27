@@ -199,11 +199,7 @@ func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64,
 	queryState interface{},
 	minBinX, minBinY, maxBinX, maxBinY int) {
 
-	var (
-		iindex, jindex int
-		co             *ClientProxy
-		bin            **ClientProxy
-	)
+	var iindex, jindex int
 
 	radiusSquared := radius * radius
 
@@ -213,12 +209,10 @@ func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64,
 		// loop for y bins across diameter of circle
 		jindex = minBinY
 		for j := minBinY; j <= maxBinY; j++ {
-			// get current bin's client object list
-			bin = &db.bins[iindex+jindex]
-			co = *bin
-
 			// traverse current bin's client object list
-			traverseBinClientObjectList(co, x, y,
+			traverseBinClientObjectList(
+				db.bins[iindex+jindex],
+				x, y,
 				radiusSquared,
 				fn,
 				queryState)
