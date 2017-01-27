@@ -192,7 +192,7 @@ func (db *DB) RemoveAllObjects() {
 	}
 }
 
-// This subroutine of MapOverAllObjectsInLocality efficiently traverses of
+// This subroutine of MapOverAllObjectsInLocality efficiently traverses a
 // subset of bins specified by max and min bin coordinates.
 func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64,
 	fn ObjCallback,
