@@ -1,5 +1,5 @@
 // Package lq implements a spatial database which stores objects each of which
-// is associated with a 2d point (a location in a 2d space). The points serve
+// is associated with a 2D point (a location in a 2D space). The points serve
 // as the "search key" for the associated object. It is intended to efficiently
 // answer "circle inclusion" queries, also known as "range queries": basically
 // questions like:
@@ -12,11 +12,10 @@
 // (for example, constructing a Delaunay triangulation of the point set) may not
 // be practical.
 //
-// The implementation is a "bin lattice": a 2d rectangular array of brick-shaped
-// (rectangular parallelepipeds) regions of space. Each region is represented by
-// a pointer to a (possibly empty) doubly-linked list of objects. All of these
-// sub-bricks are the same size. All bricks are aligned with the global
-// coordinate axes.
+// The implementation is a "bin lattice": a 2D rectangular array of brick-shaped
+// (rectangles) regions of space. Each region is represented by a pointer to a
+// (possibly empty) doubly-linked list of objects. All of these sub-bricks are
+// the same size. All bricks are aligned with the global coordinate axes.
 //
 // Terminology used here: the region of space associated with a bin is called a
 // sub-brick. The collection of all sub-bricks is called the super-brick. The
