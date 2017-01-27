@@ -24,6 +24,14 @@ same size. All bricks are aligned with the global coordinate axes.
 
 ## Benchmarks
 
+![benchmark image](https://github.com/aurelien-rainone/golq/blob/readme-stuff/benchmarks.png)
+
+This *logarithmic scale* plot shows the numbers obtained in the following
+benchmarks. The *brute-force method* computes squared distances between every
+object and the randomly chosen search query point. It doesn't even include the
+additional time that would be taken to sort them in order to extract the
+nearest (or K nearest).
+
 ```
 BenchmarkBruteForce10-2                          2000000               819 ns/op
 BenchmarkBruteForce50-2                           500000              3570 ns/op
@@ -58,8 +66,6 @@ BenchmarkObjectsInLocalityLq1000Radius4-2         200000              7881 ns/op
 PASS
 ok      github.com/aurelien-rainone/golq        53.587s
 ```
-
-![benchmark image](https://github.com/aurelien-rainone/golq/blob/readme-stuff/benchmarks.png)
 
 ## Credits
 
