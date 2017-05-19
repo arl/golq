@@ -1,5 +1,8 @@
 # golq
-[![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/aurelien-rainone/golq) [![Build Status](https://travis-ci.org/aurelien-rainone/golq.svg?branch=master)](https://travis-ci.org/aurelien-rainone/golq) [![Coverage Status](https://coveralls.io/repos/github/aurelien-rainone/golq/badge.svg?branch=master)](https://coveralls.io/github/aurelien-rainone/golq?branch=master)
+[![Build Status](https://travis-ci.org/aurelien-rainone/golq.svg?branch=master)](https://travis-ci.org/aurelien-rainone/golq)
+[![Coverage Status](https://coveralls.io/repos/github/aurelien-rainone/golq/badge.svg?branch=master)](https://coveralls.io/github/aurelien-rainone/golq?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/aurelien-rainone/golq)](https://goreportcard.com/report/github.com/aurelien-rainone/golq)
+[![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/aurelien-rainone/golq)
 
 **2D locality queries in Go**
 
