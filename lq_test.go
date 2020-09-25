@@ -196,6 +196,7 @@ func TestObjectLocality(t *testing.T) {
 func TestBinRelinking(t *testing.T) {
 	for i := range []int{1, 2, 3} {
 		db := CreateDatabase(0, 0, 10, 10, 5, 5)
+
 		p1 := newEntity(1)
 		p2 := newEntity(2)
 		p3 := newEntity(3)
@@ -236,12 +237,9 @@ func TestNearestNeighbor(t *testing.T) {
 		t.Run(fmt.Sprintf("nearest test %d", i), func(t *testing.T) {
 			db := CreateDatabase(0, 0, 10, 10, 5, 5)
 
-			p1 := newEntity(1)
-			p2 := newEntity(2)
-			p3 := newEntity(3)
-			db.UpdateForNewLocation(p1, tt.p1x, tt.p1y)
-			db.UpdateForNewLocation(p2, tt.p2x, tt.p2y)
-			db.UpdateForNewLocation(p3, tt.p3x, tt.p3y)
+			db.UpdateForNewLocation(newEntity(1), tt.p1x, tt.p1y)
+			db.UpdateForNewLocation(newEntity(2), tt.p2x, tt.p2y)
+			db.UpdateForNewLocation(newEntity(3), tt.p3x, tt.p3y)
 
 			got := db.FindNearestNeighborWithinRadius(tt.cx, tt.cy, tt.cr, tt.ignore)
 			if got != tt.want {
