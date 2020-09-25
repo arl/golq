@@ -49,8 +49,8 @@ func (m idset) assertIsContained(t *testing.T, id int, contains bool) {
 }
 
 // storeID is a CallBackFunction that stores the entity ID into the set.
-func storeID(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
-	m := clientQueryState.(idset)
+func (m idset) storeID(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
+	// m := clientQueryState.(idset)
 	m[clientObject.(int)] = struct{}{}
 }
 
@@ -82,7 +82,7 @@ func TestAddObjectToDatabase(t *testing.T) {
 			db.UpdateForNewLocation(newEntity(1), tt.ptx, tt.pty)
 
 			ids := make(idset)
-			db.MapOverAllObjects(storeID, ids)
+			db.MapOverAllObjects(ids.storeID, nil)
 
 			ids.assertContains(t, 1)
 		})
@@ -113,7 +113,7 @@ func TestRemoveObject(t *testing.T) {
 			p1.RemoveFromBin()
 
 			ids := make(idset)
-			db.MapOverAllObjects(storeID, ids)
+			db.MapOverAllObjects(ids.storeID, nil)
 
 			ids.assertNotContains(t, 1)
 		})
@@ -142,7 +142,7 @@ func TestRemoveAllObjects(t *testing.T) {
 			db.RemoveAllObjects()
 
 			ids := make(idset)
-			db.MapOverAllObjects(storeID, ids)
+			db.MapOverAllObjects(ids.storeID, nil)
 			ids.assertEmpty(t)
 		})
 	}
@@ -184,7 +184,7 @@ func TestObjectLocality(t *testing.T) {
 			db.UpdateForNewLocation(newEntity(3), tt.p3x, tt.p3y)
 
 			ids := make(idset)
-			db.MapOverAllObjectsInLocality(tt.cx, tt.cy, tt.cr, storeID, ids)
+			db.MapOverAllObjectsInLocality(tt.cx, tt.cy, tt.cr, ids.storeID, nil)
 
 			ids.assertIsContained(t, 1, tt.r1)
 			ids.assertIsContained(t, 2, tt.r2)
@@ -213,7 +213,7 @@ func TestBinRelinking(t *testing.T) {
 		}
 
 		ids := make(idset)
-		db.MapOverAllObjectsInLocality(5, 5, 1, storeID, ids)
+		db.MapOverAllObjectsInLocality(5, 5, 1, ids.storeID, nil)
 		ids.assertIsContained(t, 1, i != 1)
 		ids.assertIsContained(t, 2, i != 2)
 		ids.assertIsContained(t, 3, i != 3)
