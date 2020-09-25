@@ -1,4 +1,6 @@
-# golq
+golq : 2D Locality Queries
+====
+
 [![Build Status](https://travis-ci.org/arl/golq.svg?branch=master)](https://travis-ci.org/arl/golq)
 [![Coverage Status](https://coveralls.io/repos/github/arl/golq/badge.svg?branch=master)](https://coveralls.io/github/arl/golq?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/arl/golq)](https://goreportcard.com/report/github.com/arl/golq)
@@ -25,7 +27,14 @@ The implementation is a **bin lattice**: a 2D rectangular array of brick-shaped
 (possibly empty) doubly-linked list of objects. All of these sub-bricks are the
 same size. All bricks are aligned with the global coordinate axes.
 
-## Benchmarks
+
+Usage example
+-------------
+
+**TODO**
+
+Benchmarks
+----------
 
 ![benchmark image](https://github.com/arl/golq/blob/readme-stuff/benchmarks.png)
 
@@ -70,7 +79,14 @@ PASS
 ok      github.com/arl/golq        53.587s
 ```
 
-## Credits
+Credits
+-------
 
 This library is loosely inspired by the C language lq utility in
 [OpenSteer](https://github.com/meshula/OpenSteer).
+
+
+License
+-------
+
+- [MIT License](LICENSE)
