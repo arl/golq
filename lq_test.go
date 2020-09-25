@@ -15,24 +15,32 @@ func newEntity(id int) *ClientProxy {
 type idset map[int]struct{}
 
 func (m idset) assertEmpty(t *testing.T) {
+	t.Helper()
+
 	if len(m) > 0 {
-		t.Errorf("want empty ids map, got : %v", m)
+		t.Errorf("got len(idset) = %d, want empty", len(m))
 	}
 }
 
 func (m idset) assertContains(t *testing.T, id int) {
+	t.Helper()
+
 	if _, ok := m[id]; !ok {
-		t.Errorf("want ids map contains id %d, didn't get it", id)
+		t.Errorf("idset doesn't not contain id=%d but should", id)
 	}
 }
 
 func (m idset) assertNotContains(t *testing.T, id int) {
+	t.Helper()
+
 	if _, ok := m[id]; ok {
-		t.Errorf("want ids map not contains id %d, got it", id)
+		t.Errorf("idset contains id=%d but shouldn't", id)
 	}
 }
 
-func (m idset) assertContainedIs(t *testing.T, id int, contains bool) {
+func (m idset) assertIsContained(t *testing.T, id int, contains bool) {
+	t.Helper()
+
 	if contains {
 		m.assertContains(t, id)
 	} else {
@@ -40,25 +48,25 @@ func (m idset) assertContainedIs(t *testing.T, id int, contains bool) {
 	}
 }
 
-// CallBackFunction that copies every found entity id into the provided idMap
-func retrieveAllIds(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
+// storeID is a CallBackFunction that stores the entity ID into the set.
+func storeID(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
 	m := clientQueryState.(idset)
 	m[clientObject.(int)] = struct{}{}
 }
 
-// CallBackFunction that prints all entities, for debugging
-func printAllEntities(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
+// printEntity is a CallBackFunction that prints the entity.
+func printEntity(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
 	id := clientObject.(int)
 	log.Printf("printAllEntities: id:%+v %f\n", id, distanceSquared)
 }
 
 func TestAddObjectToDatabase(t *testing.T) {
-	var flagtests = []struct {
+	var tests = []struct {
 		orgx, orgy float64
 		szx, szy   float64
 		divx, divy int
 		ptx, pty   float64
-		tested     string
+		name       string
 	}{
 		{0, 0, 10, 10, 5, 5, 5, 5, "inside super brick"},
 		{0, 0, 10, 10, 5, 5, 0, 11, "outside super brick (top)"},
@@ -67,17 +75,14 @@ func TestAddObjectToDatabase(t *testing.T) {
 		{0, 0, 10, 10, 5, 5, 0, -1, "outside super brick (bottom)"},
 	}
 
-	for _, tt := range flagtests {
-
-		t.Run(tt.tested, func(t *testing.T) {
-
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			db := CreateDatabase(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
-			p1 := newEntity(1)
-			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
+			db.UpdateForNewLocation(newEntity(1), tt.ptx, tt.pty)
 
-			ids := idset{}
-			db.MapOverAllObjects(retrieveAllIds, ids)
+			ids := make(idset)
+			db.MapOverAllObjects(storeID, ids)
 
 			ids.assertContains(t, 1)
 		})
@@ -85,12 +90,12 @@ func TestAddObjectToDatabase(t *testing.T) {
 }
 
 func TestRemoveObject(t *testing.T) {
-	var flagtests = []struct {
+	var tests = []struct {
 		orgx, orgy float64
 		szx, szy   float64
 		divx, divy int
 		ptx, pty   float64
-		tested     string
+		name       string
 	}{
 		{0, 0, 10, 10, 5, 5, 5, 5, "inside super brick"},
 		{0, 0, 10, 10, 5, 5, 0, 11, "outside super brick (top)"},
@@ -99,18 +104,16 @@ func TestRemoveObject(t *testing.T) {
 		{0, 0, 10, 10, 5, 5, 0, -1, "outside super brick (bottom)"},
 	}
 
-	for _, tt := range flagtests {
-
-		t.Run(tt.tested, func(t *testing.T) {
-
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			db := CreateDatabase(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
 			p1 := newEntity(1)
 			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
 			p1.RemoveFromBin()
 
-			ids := idset{}
-			db.MapOverAllObjects(retrieveAllIds, ids)
+			ids := make(idset)
+			db.MapOverAllObjects(storeID, ids)
 
 			ids.assertNotContains(t, 1)
 		})
@@ -118,37 +121,35 @@ func TestRemoveObject(t *testing.T) {
 }
 
 func TestRemoveAllObjects(t *testing.T) {
-	var flagtests = []struct {
+	var tests = []struct {
 		orgx, orgy float64
 		szx, szy   float64
 		divx, divy int
 		ptx, pty   float64
-		tested     string
+		name       string
 	}{
 		{0, 0, 10, 10, 5, 5, 5, 5, "inside super brick"},
 		{0, 0, 10, 10, 5, 5, -1, -1, "outside super brick"},
 	}
 
-	for _, tt := range flagtests {
-
-		t.Run(tt.tested, func(t *testing.T) {
-
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			db := CreateDatabase(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
 			p1, p2 := newEntity(1), newEntity(2)
-			ids := idset{}
 			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
 			db.UpdateForNewLocation(p2, tt.ptx, tt.pty)
 			db.RemoveAllObjects()
 
-			db.MapOverAllObjects(retrieveAllIds, ids)
+			ids := make(idset)
+			db.MapOverAllObjects(storeID, ids)
 			ids.assertEmpty(t)
 		})
 	}
 }
 
 func TestObjectLocality(t *testing.T) {
-	var flagtests = []struct {
+	var tests = []struct {
 		p1x, p1y, p2x, p2y, p3x, p3y float64 // the 3 points in the db
 		cx, cy                       float64 // search circle center
 		cr                           float64 // search circle radius
@@ -174,30 +175,25 @@ func TestObjectLocality(t *testing.T) {
 		{1, 1, 1, 2, 1, 3, -11, -11, 0.1, false, false, false},
 		{1, 1, 1, 2, 1, 3, -1, -11, 0.1, false, false, false},
 	}
-	for i, tt := range flagtests {
-
+	for i, tt := range tests {
 		t.Run(fmt.Sprintf("locality test %d", i), func(t *testing.T) {
-
 			db := CreateDatabase(0, 0, 10, 10, 5, 5)
 
-			p1 := newEntity(1)
-			p2 := newEntity(2)
-			p3 := newEntity(3)
-			db.UpdateForNewLocation(p1, tt.p1x, tt.p1y)
-			db.UpdateForNewLocation(p2, tt.p2x, tt.p2y)
-			db.UpdateForNewLocation(p3, tt.p3x, tt.p3y)
+			db.UpdateForNewLocation(newEntity(1), tt.p1x, tt.p1y)
+			db.UpdateForNewLocation(newEntity(2), tt.p2x, tt.p2y)
+			db.UpdateForNewLocation(newEntity(3), tt.p3x, tt.p3y)
 
-			ids := idset{}
-			db.MapOverAllObjectsInLocality(tt.cx, tt.cy, tt.cr, retrieveAllIds, ids)
-			ids.assertContainedIs(t, 1, tt.r1)
-			ids.assertContainedIs(t, 2, tt.r2)
-			ids.assertContainedIs(t, 3, tt.r3)
+			ids := make(idset)
+			db.MapOverAllObjectsInLocality(tt.cx, tt.cy, tt.cr, storeID, ids)
+
+			ids.assertIsContained(t, 1, tt.r1)
+			ids.assertIsContained(t, 2, tt.r2)
+			ids.assertIsContained(t, 3, tt.r3)
 		})
 	}
 }
 
 func TestBinRelinking(t *testing.T) {
-
 	for i := range []int{1, 2, 3} {
 		db := CreateDatabase(0, 0, 10, 10, 5, 5)
 		p1 := newEntity(1)
@@ -216,16 +212,16 @@ func TestBinRelinking(t *testing.T) {
 			p3.RemoveFromBin()
 		}
 
-		ids := idset{}
-		db.MapOverAllObjectsInLocality(5, 5, 1, retrieveAllIds, ids)
-		ids.assertContainedIs(t, 1, i != 1)
-		ids.assertContainedIs(t, 2, i != 2)
-		ids.assertContainedIs(t, 3, i != 3)
+		ids := make(idset)
+		db.MapOverAllObjectsInLocality(5, 5, 1, storeID, ids)
+		ids.assertIsContained(t, 1, i != 1)
+		ids.assertIsContained(t, 2, i != 2)
+		ids.assertIsContained(t, 3, i != 3)
 	}
 }
 
 func TestNearestNeighbor(t *testing.T) {
-	var flagtests = []struct {
+	var tests = []struct {
 		p1x, p1y, p2x, p2y, p3x, p3y float64     // the 3 points in the db
 		cx, cy                       float64     // search circle center
 		cr                           float64     // search circle radius
@@ -236,10 +232,8 @@ func TestNearestNeighbor(t *testing.T) {
 		{1, 1, 1, 2, 1, 3, 1, 1, 0.1, 1, nil},
 		{1, 1, 1, 2, 1, 3, 1, 1, 1.1, 1, 2},
 	}
-	for i, tt := range flagtests {
-
+	for i, tt := range tests {
 		t.Run(fmt.Sprintf("nearest test %d", i), func(t *testing.T) {
-
 			db := CreateDatabase(0, 0, 10, 10, 5, 5)
 
 			p1 := newEntity(1)
