@@ -1,21 +1,22 @@
 language: go
 
 go: 
- - 1.7
- - tip
+  - "1.12.x"
+  - tip
 
-sudo: false
+matrix:
+  allow_failures:
+    - go: tip
+fast_finish: true
 
-before_script:
-  - go vet ./...
-
-before_install:
-- go get github.com/axw/gocov/gocov
-- go get github.com/mattn/goveralls
-- if ! go get github.com/golang/tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
-- go get github.com/golang/lint/golint
+cache:
+  directories:
+    - $GOPATH/pkg/mod
 
 script:
-- $HOME/gopath/bin/golint
-- go test -v -covermode=count -coverprofile=profile.cov
-- $HOME/gopath/bin/goveralls -service=travis-ci
+  - go vet ./...
+  - go test -v -race ./...
+  - go test -v -cover -covermode=count -coverprofile=coverage.txt ./... > /dev/null
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
