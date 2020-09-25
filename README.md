@@ -1,8 +1,8 @@
 # golq
-[![Build Status](https://travis-ci.org/aurelien-rainone/golq.svg?branch=master)](https://travis-ci.org/aurelien-rainone/golq)
-[![Coverage Status](https://coveralls.io/repos/github/aurelien-rainone/golq/badge.svg?branch=master)](https://coveralls.io/github/aurelien-rainone/golq?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/aurelien-rainone/golq)](https://goreportcard.com/report/github.com/aurelien-rainone/golq)
-[![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/aurelien-rainone/golq)
+[![Build Status](https://travis-ci.org/arl/golq.svg?branch=master)](https://travis-ci.org/arl/golq)
+[![Coverage Status](https://coveralls.io/repos/github/arl/golq/badge.svg?branch=master)](https://coveralls.io/github/arl/golq?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/arl/golq)](https://goreportcard.com/report/github.com/arl/golq)
+[![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/arl/golq)
 
 **2D locality queries in Go**
 
@@ -27,7 +27,7 @@ same size. All bricks are aligned with the global coordinate axes.
 
 ## Benchmarks
 
-![benchmark image](https://github.com/aurelien-rainone/golq/blob/readme-stuff/benchmarks.png)
+![benchmark image](https://github.com/arl/golq/blob/readme-stuff/benchmarks.png)
 
 This *logarithmic scale* plot shows the numbers obtained in the following
 benchmarks. The *brute-force method* computes squared distances between every
@@ -67,7 +67,7 @@ BenchmarkObjectsInLocalityLq200Radius4-2         1000000              2169 ns/op
 BenchmarkObjectsInLocalityLq500Radius4-2          300000              4000 ns/op
 BenchmarkObjectsInLocalityLq1000Radius4-2         200000              7881 ns/op
 PASS
-ok      github.com/aurelien-rainone/golq        53.587s
+ok      github.com/arl/golq        53.587s
 ```
 
 ## Credits
