@@ -12,27 +12,27 @@ func newEntity(id int) *ClientProxy {
 }
 
 // map of ints, acting as a set of int
-type idMap map[int]bool
+type idset map[int]struct{}
 
-func (m idMap) assertEmpty(t *testing.T) {
+func (m idset) assertEmpty(t *testing.T) {
 	if len(m) > 0 {
 		t.Errorf("want empty ids map, got : %v", m)
 	}
 }
 
-func (m idMap) assertContains(t *testing.T, id int) {
+func (m idset) assertContains(t *testing.T, id int) {
 	if _, ok := m[id]; !ok {
 		t.Errorf("want ids map contains id %d, didn't get it", id)
 	}
 }
 
-func (m idMap) assertNotContains(t *testing.T, id int) {
+func (m idset) assertNotContains(t *testing.T, id int) {
 	if _, ok := m[id]; ok {
 		t.Errorf("want ids map not contains id %d, got it", id)
 	}
 }
 
-func (m idMap) assertContainedIs(t *testing.T, id int, contains bool) {
+func (m idset) assertContainedIs(t *testing.T, id int, contains bool) {
 	if contains {
 		m.assertContains(t, id)
 	} else {
@@ -42,8 +42,8 @@ func (m idMap) assertContainedIs(t *testing.T, id int, contains bool) {
 
 // CallBackFunction that copies every found entity id into the provided idMap
 func retrieveAllIds(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
-	m := clientQueryState.(idMap)
-	m[clientObject.(int)] = true
+	m := clientQueryState.(idset)
+	m[clientObject.(int)] = struct{}{}
 }
 
 // CallBackFunction that prints all entities, for debugging
@@ -76,7 +76,7 @@ func TestAddObjectToDatabase(t *testing.T) {
 			p1 := newEntity(1)
 			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
 
-			ids := idMap{}
+			ids := idset{}
 			db.MapOverAllObjects(retrieveAllIds, ids)
 
 			ids.assertContains(t, 1)
@@ -109,7 +109,7 @@ func TestRemoveObject(t *testing.T) {
 			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
 			p1.RemoveFromBin()
 
-			ids := idMap{}
+			ids := idset{}
 			db.MapOverAllObjects(retrieveAllIds, ids)
 
 			ids.assertNotContains(t, 1)
@@ -136,7 +136,7 @@ func TestRemoveAllObjects(t *testing.T) {
 			db := CreateDatabase(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
 			p1, p2 := newEntity(1), newEntity(2)
-			ids := idMap{}
+			ids := idset{}
 			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
 			db.UpdateForNewLocation(p2, tt.ptx, tt.pty)
 			db.RemoveAllObjects()
@@ -187,7 +187,7 @@ func TestObjectLocality(t *testing.T) {
 			db.UpdateForNewLocation(p2, tt.p2x, tt.p2y)
 			db.UpdateForNewLocation(p3, tt.p3x, tt.p3y)
 
-			ids := idMap{}
+			ids := idset{}
 			db.MapOverAllObjectsInLocality(tt.cx, tt.cy, tt.cr, retrieveAllIds, ids)
 			ids.assertContainedIs(t, 1, tt.r1)
 			ids.assertContainedIs(t, 2, tt.r2)
@@ -216,7 +216,7 @@ func TestBinRelinking(t *testing.T) {
 			p3.RemoveFromBin()
 		}
 
-		ids := idMap{}
+		ids := idset{}
 		db.MapOverAllObjectsInLocality(5, 5, 1, retrieveAllIds, ids)
 		ids.assertContainedIs(t, 1, i != 1)
 		ids.assertContainedIs(t, 2, i != 2)
