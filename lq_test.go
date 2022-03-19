@@ -7,12 +7,13 @@ import (
 )
 
 // create the test client proxy
-func newEntity(id int) *ClientProxy {
+func newEntity(id int) *ClientProxy[int] {
 	return NewClientProxy(id)
 }
 
-// map of ints, acting as a set of int
-type idset map[int]struct{}
+type set[K comparable] map[K]struct{}
+
+type idset set[int]
 
 func (m idset) assertEmpty(t *testing.T) {
 	t.Helper()
@@ -49,14 +50,12 @@ func (m idset) assertIsContained(t *testing.T, id int, contains bool) {
 }
 
 // storeID is a CallBackFunction that stores the entity ID into the set.
-func (m idset) storeID(clientObject interface{}, sqDist float64) {
-	// m := clientQueryState.(idset)
-	m[clientObject.(int)] = struct{}{}
+func (m idset) storeID(id int, sqDist float64) {
+	m[id] = struct{}{}
 }
 
 // printEntity is a CallBackFunction that prints the entity.
-func printEntity(clientObject interface{}, sqDist float64) {
-	id := clientObject.(int)
+func printEntity(id int, sqDist float64) {
 	log.Printf("printAllEntities: id:%+v %f\n", id, sqDist)
 }
 
@@ -77,7 +76,7 @@ func TestAddObjectToDatabase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := NewDB(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
+			db := NewDB[int](tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
 			db.UpdateForNewLocation(newEntity(1), tt.ptx, tt.pty)
 
@@ -106,7 +105,7 @@ func TestRemoveObject(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := NewDB(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
+			db := NewDB[int](tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
 			p1 := newEntity(1)
 			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
@@ -134,7 +133,7 @@ func TestRemoveAllObjects(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := NewDB(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
+			db := NewDB[int](tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
 			p1, p2 := newEntity(1), newEntity(2)
 			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
@@ -177,7 +176,7 @@ func TestObjectLocality(t *testing.T) {
 	}
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("locality test %d", i), func(t *testing.T) {
-			db := NewDB(0, 0, 10, 10, 5, 5)
+			db := NewDB[int](0, 0, 10, 10, 5, 5)
 
 			db.UpdateForNewLocation(newEntity(1), tt.p1x, tt.p1y)
 			db.UpdateForNewLocation(newEntity(2), tt.p2x, tt.p2y)
@@ -195,7 +194,7 @@ func TestObjectLocality(t *testing.T) {
 
 func TestBinRelinking(t *testing.T) {
 	for i := range []int{1, 2, 3} {
-		db := NewDB(0, 0, 10, 10, 5, 5)
+		db := NewDB[int](0, 0, 10, 10, 5, 5)
 
 		p1 := newEntity(1)
 		p2 := newEntity(2)
@@ -223,27 +222,30 @@ func TestBinRelinking(t *testing.T) {
 
 func TestNearestNeighbor(t *testing.T) {
 	var tests = []struct {
-		p1x, p1y, p2x, p2y, p3x, p3y float64     // the 3 points in the db
-		cx, cy                       float64     // search circle center
-		cr                           float64     // search circle radius
-		ignore                       interface{} // ignored object
-		want                         interface{} // expected nearest object
+		p1x, p1y, p2x, p2y, p3x, p3y float64 // the 3 points in the db
+		cx, cy                       float64 // search circle center
+		cr                           float64 // search circle radius
+		ignore                       int     // ignored
+		want                         int     // expected nearest object
+		wantFound                    bool    // expected value of found
 	}{
-		{1, 1, 1, 2, 1, 3, 1, 1, 0.1, nil, 1},
-		{1, 1, 1, 2, 1, 3, 1, 1, 0.1, 1, nil},
-		{1, 1, 1, 2, 1, 3, 1, 1, 1.1, 1, 2},
+		{1, 1, 1, 2, 1, 3, 1, 1, 0.1, 1, 0, false},
+		{1, 1, 1, 2, 1, 3, 1, 1, 1.1, 1, 2, true},
 	}
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("nearest test %d", i), func(t *testing.T) {
-			db := NewDB(0, 0, 10, 10, 5, 5)
+			db := NewDB[int](0, 0, 10, 10, 5, 5)
 
 			db.UpdateForNewLocation(newEntity(1), tt.p1x, tt.p1y)
 			db.UpdateForNewLocation(newEntity(2), tt.p2x, tt.p2y)
 			db.UpdateForNewLocation(newEntity(3), tt.p3x, tt.p3y)
 
-			got := db.FindNearestNeighborWithinRadius(tt.cx, tt.cy, tt.cr, tt.ignore)
+			got, found := db.FindNearestNeighborWithinRadius(tt.cx, tt.cy, tt.cr, tt.ignore)
+			if found != tt.wantFound {
+				t.Errorf("found = %t, wantFound = %t", found, tt.wantFound)
+			}
 			if got != tt.want {
-				t.Errorf("want nearest neighbour %v, got %v", tt.want, got)
+				t.Errorf("got nearest neighbour = %v, want %v", got, tt.want)
 			}
 		})
 	}

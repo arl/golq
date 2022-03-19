@@ -56,17 +56,17 @@ import "math"
 //
 // Typically one of these would be created (by a call to DB.NewDB)
 // for a given application.
-type DB struct {
+type DB[T comparable] struct {
 	orgx, orgy float64 // orgx and orgy are the super-brick corner minimum coordinates
 	szx, szy   float64 // length of the edges of the super-brick
 	divx, divy int     // number of sub-brick divisions in each direction
 
 	// Actual bins, allocated in a 1D slice (use coordsToIndex to go from bin
 	// coordinates to index in this slice).
-	bins []*ClientProxy
+	bins []*ClientProxy[T]
 
 	// extra bin for "everything else" (points outside super-brick)
-	other *ClientProxy
+	other *ClientProxy[T]
 }
 
 // NewDB creates a new database, allocates the bin array, and returns the DB
@@ -77,28 +77,28 @@ type DB struct {
 //    and y extent.
 //  - sizex/sizey: the width and height of the super-brick.
 //  - divx/divy: the number of subdivisions (sub-bricks) along each axis.
-func NewDB(orgx, orgy, sizex, sizey float64, divx, divy int) *DB {
-	return &DB{
+func NewDB[T comparable](orgx, orgy, sizex, sizey float64, divx, divy int) *DB[T] {
+	return &DB[T]{
 		orgx: orgx,
 		orgy: orgy,
 		szx:  sizex,
 		szy:  sizey,
 		divx: divx,
 		divy: divy,
-		bins: make([]*ClientProxy, divx*divy),
+		bins: make([]*ClientProxy[T], divx*divy),
 	}
 }
 
 // coordsToIndex determines the index into linear bin array given 2D bin
 // indices
-func (db *DB) coordsToIndex(ix, iy int) int {
+func (db *DB[T]) coordsToIndex(ix, iy int) int {
 	return ix*db.divy + iy
 }
 
 // Find the bin ID for a location in space. The location is given in
 // terms of its XY coordinates. The bin ID is a pointer to a pointer
 // to the bin contents list.
-func (db *DB) binForLocation(x, y float64) **ClientProxy {
+func (db *DB[T]) binForLocation(x, y float64) **ClientProxy[T] {
 	// If point is outside the super-brick, return the 'other' bin.
 	if x < db.orgx {
 		return &(db.other)
@@ -124,7 +124,7 @@ func (db *DB) binForLocation(x, y float64) **ClientProxy {
 // It should be called for each client object every time its location
 // changes. For example, in an animation application, this would be called
 // each frame for every moving object.
-func (db *DB) UpdateForNewLocation(object *ClientProxy, x, y float64) {
+func (db *DB[T]) UpdateForNewLocation(object *ClientProxy[T], x, y float64) {
 	// find bin for new location
 	newBin := db.binForLocation(x, y)
 
@@ -140,15 +140,14 @@ func (db *DB) UpdateForNewLocation(object *ClientProxy, x, y float64) {
 }
 
 // ObjectFunc is the function called, for each object, when mapping over a set
-// of objects. It gets called with:
-//  - an empty interface corresponding to a ClientProxy's "object".
-//  - the squared distance from the center of the search locality circle (x,y)
-//    to object's key-point.
-type ObjectFunc func(clientObj interface{}, sqDist float64)
+// of objects. ObjectFunc gets called with the object in question and the
+// squared distance from the center of the search locality circle (x,y) to the
+// object's key-point.
+type ObjectFunc[T any] func(obj T, sqDist float64)
 
 // MapOverAllObjects applies a user-supplied function to all objects in the
 // database, regardless of locality (see DB.MapOverAllObjectsInLocality)
-func (db *DB) MapOverAllObjects(fn ObjectFunc) {
+func (db *DB[T]) MapOverAllObjects(fn ObjectFunc[T]) {
 	bincount := db.divx * db.divy
 	for i := 0; i < bincount; i++ {
 		db.bins[i].mapOverAllObjectsInBin(fn)
@@ -157,8 +156,8 @@ func (db *DB) MapOverAllObjects(fn ObjectFunc) {
 }
 
 // RemoveAllObjects removes (all proxies for) all objects from all bins.
-func (db *DB) RemoveAllObjects() {
-	removeAllObjectsInBin := func(pbin **ClientProxy) {
+func (db *DB[T]) RemoveAllObjects() {
+	removeAllObjectsInBin := func(pbin **ClientProxy[T]) {
 		for *pbin != nil {
 			(*pbin).RemoveFromBin()
 		}
@@ -175,7 +174,7 @@ func (db *DB) RemoveAllObjects() {
 
 // This subroutine of MapOverAllObjectsInLocality efficiently traverses a
 // subset of bins specified by max and min bin coordinates.
-func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64, f ObjectFunc, minBinX, minBinY, maxBinX, maxBinY int) {
+func (db *DB[T]) mapOverAllObjectsInLocalityClipped(x, y, radius float64, f ObjectFunc[T], minBinX, minBinY, maxBinX, maxBinY int) {
 	sqRadius := radius * radius
 
 	// Loop for x bins across diameter of circle.
@@ -195,7 +194,7 @@ func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64, f ObjectF
 // If the query region (sphere) extends outside of the "super-brick"
 // we need to check for objects in the catch-all "other" bin which
 // holds any object which are not inside the regular sub-bricks
-func (db *DB) mapOverAllOutsideObjects(x, y, radius float64, f ObjectFunc) {
+func (db *DB[T]) mapOverAllOutsideObjects(x, y, radius float64, f ObjectFunc[T]) {
 	co := db.other
 	sqRadius := radius * radius
 
@@ -212,7 +211,7 @@ func (db *DB) mapOverAllOutsideObjects(x, y, radius float64, f ObjectFunc) {
 // database to quickly reject any objects in bins which do not overlap with the
 // circle of interest. Incremental calculation of index values is used to
 // efficiently traverse the bins of interest.
-func (db *DB) MapOverAllObjectsInLocality(x, y, radius float64, f ObjectFunc) {
+func (db *DB[T]) MapOverAllObjectsInLocality(x, y, radius float64, f ObjectFunc[T]) {
 	partlyOut := false
 	completelyOutside := x+radius < db.orgx || y+radius < db.orgy ||
 		x-radius >= db.orgx+db.szx || y-radius >= db.orgy+db.szy
@@ -255,21 +254,23 @@ func (db *DB) MapOverAllObjectsInLocality(x, y, radius float64, f ObjectFunc) {
 	db.mapOverAllObjectsInLocalityClipped(x, y, radius, f, minBinX, minBinY, maxBinX, maxBinY)
 }
 
-type findNearest struct {
-	ignored   interface{}
-	nearest   interface{}
+type findNearest[T comparable] struct {
+	ignored   T
+	nearest   T
 	minSqDist float64
+	found     bool
 }
 
-func (f *findNearest) do(clientObj interface{}, sqDist float64) {
-	if f.ignored == clientObj {
+func (f *findNearest[T]) do(obj T, sqDist float64) {
+	if f.ignored == obj {
 		return
 	}
 
 	// Record this object if it is the nearest one so far.
 	if f.minSqDist > sqDist {
-		f.nearest = clientObj
+		f.nearest = obj
 		f.minSqDist = sqDist
+		f.found = true
 	}
 }
 
@@ -278,13 +279,14 @@ func (f *findNearest) do(clientObj interface{}, sqDist float64) {
 //
 // That is, it finds the object (if any) within a given search circle which is
 // nearest to the circle's center. The ignored argument can be used to exclude
-// an object from consideration (or it can be nil). This is useful when looking
-// for the nearest neighbor of an object in the database, since otherwise it
-// would be its own nearest neighbor. The function returns an interface to the
-// nearest object, or nil if none is found.
-func (db *DB) FindNearestNeighborWithinRadius(x, y, radius float64, ignored interface{}) interface{} {
+// an object from consideration. This is useful when looking for the nearest
+// neighbor of an object in the database, since otherwise it would be its own
+// nearest neighbor. The function returns the nearest object and true, or if
+// there was no object with the provided radisu, it returns the zero value of T,
+// and false.
+func (db *DB[T]) FindNearestNeighborWithinRadius(x, y, radius float64, ignored T) (T, bool) {
 	// Initialize search state
-	fns := findNearest{
+	fns := findNearest[T]{
 		ignored:   ignored,
 		minSqDist: math.MaxFloat64,
 	}
@@ -293,7 +295,7 @@ func (db *DB) FindNearestNeighborWithinRadius(x, y, radius float64, ignored inte
 	db.MapOverAllObjectsInLocality(x, y, radius, fns.do)
 
 	// Return nearest object found, if any.
-	return fns.nearest
+	return fns.nearest, fns.found
 }
 
 // ClientProxy is a proxy for a client (application) object in the spatial
@@ -301,15 +303,15 @@ func (db *DB) FindNearestNeighborWithinRadius(x, y, radius float64, ignored inte
 //
 // One of these exists for each client object. This might be included within
 // the structure of a client object, or could be allocated separately.
-type ClientProxy struct {
+type ClientProxy[T any] struct {
 	// Previous/next objects in this bin, or nil
-	prev, next *ClientProxy
+	prev, next *ClientProxy[T]
 
 	// bin ID (pointer to pointer to bin contents list)
-	bin **ClientProxy
+	bin **ClientProxy[T]
 
 	// Client object interface
-	object interface{}
+	object T
 
 	// Object's location ("key point") used for spatial sorting
 	x, y float64
@@ -320,13 +322,13 @@ type ClientProxy struct {
 // The application needs to call this once on each ClientProxy at
 // setup time to initialize its list pointers and associate the proxy
 // with its client object.
-func NewClientProxy(clientObj interface{}) *ClientProxy {
-	return &ClientProxy{object: clientObj}
+func NewClientProxy[T any](obj T) *ClientProxy[T] {
+	return &ClientProxy[T]{object: obj}
 }
 
 // AddToBin adds a given client object to a given bin, linking it into the
 // bin contents list.
-func (cp *ClientProxy) AddToBin(bin **ClientProxy) {
+func (cp *ClientProxy[T]) AddToBin(bin **ClientProxy[T]) {
 	// if bin is currently empty
 	if *bin == nil {
 		cp.prev = nil
@@ -345,7 +347,7 @@ func (cp *ClientProxy) AddToBin(bin **ClientProxy) {
 
 // RemoveFromBin removes a given client object from its current bin, unlinking
 // it from the bin contents list.
-func (cp *ClientProxy) RemoveFromBin() {
+func (cp *ClientProxy[T]) RemoveFromBin() {
 	// adjust pointers if object is currently in a bin
 	if cp.bin != nil {
 		// If this object is at the head of the list, move the bin
@@ -376,7 +378,7 @@ func (cp *ClientProxy) RemoveFromBin() {
 // Given a bin's list of client proxies, traverse the list and invoke
 // the given ObjectFunc on each object that falls within the
 // search radius.
-func traverseBinClientObjectList(cp *ClientProxy, x, y, sqRadius float64, fn ObjectFunc) {
+func traverseBinClientObjectList[T comparable](cp *ClientProxy[T], x, y, sqRadius float64, fn ObjectFunc[T]) {
 	for cp != nil {
 		// compute distance (squared) from this client
 		// object to given locality circle's centerpoint
@@ -392,7 +394,7 @@ func traverseBinClientObjectList(cp *ClientProxy, x, y, sqRadius float64, fn Obj
 	}
 }
 
-func (cp *ClientProxy) mapOverAllObjectsInBin(fn ObjectFunc) {
+func (cp *ClientProxy[T]) mapOverAllObjectsInBin(fn ObjectFunc[T]) {
 	// walk down proxy list, applying call-back function to each one
 	for cp != nil {
 		fn(cp.object, 0)
