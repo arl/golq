@@ -271,11 +271,10 @@ type findNearest struct {
 
 func (f *findNearest) do(clientObj interface{}, sqDist float64) {
 	if f.ignoreObject == clientObj {
-		// do nothing if this is the "ignoreObject"
 		return
 	}
 
-	// record this object if it is the nearest one so far
+	// Record this object if it is the nearest one so far.
 	if f.minSqDist > sqDist {
 		f.nearestObject = clientObj
 		f.minSqDist = sqDist
@@ -312,19 +311,16 @@ func (db *DB) FindNearestNeighborWithinRadius(x, y, radius float64, ignoreObject
 // One of these exists for each client object. This might be included within
 // the structure of a client object, or could be allocated separately.
 type ClientProxy struct {
-	// previous object in this bin, or nil
-	prev *ClientProxy
-
-	// next object in this bin, or nil
-	next *ClientProxy
+	// Previous/next objects in this bin, or nil
+	prev, next *ClientProxy
 
 	// bin ID (pointer to pointer to bin contents list)
 	bin **ClientProxy
 
-	// client object interface
+	// Client object interface
 	object interface{}
 
-	// the object's location ("key point") used for spatial sorting
+	// Object's location ("key point") used for spatial sorting
 	x, y float64
 }
 
