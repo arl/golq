@@ -7,8 +7,8 @@ import (
 )
 
 // create the test client proxy
-func newEntity(id int) *ClientProxy[int] {
-	return NewClientProxy(id)
+func newEntity(id int) *Object[int] {
+	return NewObject(id)
 }
 
 type set[K comparable] map[K]struct{}
