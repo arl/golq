@@ -157,18 +157,18 @@ func (db *DB[T]) MapOverAllObjects(fn ObjectFunc[T]) {
 
 // RemoveAllObjects removes (all proxies for) all objects from all bins.
 func (db *DB[T]) RemoveAllObjects() {
-	removeAllObjectsInBin := func(pbin **ClientProxy[T]) {
+	for i := range db.bins {
+		pbin := &(db.bins[i])
 		for *pbin != nil {
 			(*pbin).RemoveFromBin()
 		}
 	}
 
-	for i := range db.bins {
-		removeAllObjectsInBin(&(db.bins[i]))
-	}
-
 	if db.other != nil {
-		removeAllObjectsInBin(&db.other)
+		pbin := &(db.other)
+		for *pbin != nil {
+			(*pbin).RemoveFromBin()
+		}
 	}
 }
 
