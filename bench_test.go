@@ -106,7 +106,7 @@ func benchmarkNearestNeighbourLq(b *testing.B, numPts int, radius float64) {
 
 	// create and fill the database
 	ents := randomNEntities(b, src, numPts)
-	db := lq.CreateDatabase(orgx, orgy, szx, szy, divx, divy)
+	db := lq.NewDB(orgx, orgy, szx, szy, divx, divy)
 	for _, ent := range ents {
 		db.UpdateForNewLocation(newProxyEntity(ent), ent.x, ent.y)
 	}
@@ -179,7 +179,7 @@ func benchmarkObjectsInLocalityLq(b *testing.B, numPts int, radius float64) {
 
 	// create and fill the database
 	ents := randomNEntities(b, src, numPts)
-	db := lq.CreateDatabase(orgx, orgy, szx, szy, divx, divy)
+	db := lq.NewDB(orgx, orgy, szx, szy, divx, divy)
 	for _, ent := range ents {
 		db.UpdateForNewLocation(newProxyEntity(ent), ent.x, ent.y)
 	}

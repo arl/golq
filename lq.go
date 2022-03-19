@@ -23,11 +23,11 @@
 // (almost) all the key-points will exist. If key-points move outside the
 // super-brick everything will continue to work, but without the speed advantage
 // provided by the spatial subdivision. For more details about how to specify
-// the super-brick's position, size and subdivisions see CreateDatabase below.
+// the super-brick's position, size and subdivisions see NewDB below.
 //
 // Overview of usage: an application using this facility would first create a
 // database with:
-//  db := CreateDatabase().
+//  db := NewDBabase().
 // For each client object the application wants to put in the database it
 // creates a ClientProxy with :
 //  p := NewClientProxy(clientObj).
@@ -36,7 +36,7 @@
 // To perform a query, DB.MapOverAllObjectsInLocality is passed an
 // application-supplied ObjCallback function to be applied to all client
 // objects in the locality. See ObjCallback below for more detail.
-//  func myObjCallback (clientObj interface{}, distSquare float64, queryState interface{}) {
+//  func myObjCallback (clientObj interface{}, sqDist float64, queryState interface{}) {
 //      // do something with clientObj...
 //  }
 //  DB.MapOverAllObjectsInLocality(x, y, radius, myObjCallback, nil)
@@ -54,7 +54,7 @@ import "math"
 
 // DB represents the spatial database.
 //
-// Typically one of these would be created (by a call to DB.CreateDatabase)
+// Typically one of these would be created (by a call to DB.NewDB)
 // for a given application.
 type DB struct {
 	// originx and originy are the super-brick corner minimum coordinates
@@ -73,7 +73,7 @@ type DB struct {
 	other *ClientProxy
 }
 
-// CreateDatabase initializes and returns an lq database.
+// NewDB creates and returns a new golq database object.
 //
 // The application needs to call this before using the lq facility. The six
 // parameters define the properties of the "super-brick":
@@ -82,7 +82,7 @@ type DB struct {
 //     - size: the width and height of the super-brick.
 //     - the number of subdivisions (sub-bricks) along each axis.
 // This routine also allocates the bin array.
-func CreateDatabase(originx, originy, sizex, sizey float64, divx, divy int) *DB {
+func NewDB(originx, originy, sizex, sizey float64, divx, divy int) *DB {
 	return &DB{
 		originx: originx,
 		originy: originy,

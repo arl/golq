@@ -77,7 +77,7 @@ func TestAddObjectToDatabase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := CreateDatabase(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
+			db := NewDB(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
 			db.UpdateForNewLocation(newEntity(1), tt.ptx, tt.pty)
 
@@ -106,7 +106,7 @@ func TestRemoveObject(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := CreateDatabase(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
+			db := NewDB(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
 			p1 := newEntity(1)
 			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
@@ -134,7 +134,7 @@ func TestRemoveAllObjects(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := CreateDatabase(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
+			db := NewDB(tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
 			p1, p2 := newEntity(1), newEntity(2)
 			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
@@ -177,7 +177,7 @@ func TestObjectLocality(t *testing.T) {
 	}
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("locality test %d", i), func(t *testing.T) {
-			db := CreateDatabase(0, 0, 10, 10, 5, 5)
+			db := NewDB(0, 0, 10, 10, 5, 5)
 
 			db.UpdateForNewLocation(newEntity(1), tt.p1x, tt.p1y)
 			db.UpdateForNewLocation(newEntity(2), tt.p2x, tt.p2y)
@@ -195,7 +195,7 @@ func TestObjectLocality(t *testing.T) {
 
 func TestBinRelinking(t *testing.T) {
 	for i := range []int{1, 2, 3} {
-		db := CreateDatabase(0, 0, 10, 10, 5, 5)
+		db := NewDB(0, 0, 10, 10, 5, 5)
 
 		p1 := newEntity(1)
 		p2 := newEntity(2)
@@ -235,7 +235,7 @@ func TestNearestNeighbor(t *testing.T) {
 	}
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("nearest test %d", i), func(t *testing.T) {
-			db := CreateDatabase(0, 0, 10, 10, 5, 5)
+			db := NewDB(0, 0, 10, 10, 5, 5)
 
 			db.UpdateForNewLocation(newEntity(1), tt.p1x, tt.p1y)
 			db.UpdateForNewLocation(newEntity(2), tt.p2x, tt.p2y)
