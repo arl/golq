@@ -57,45 +57,46 @@ import "math"
 // Typically one of these would be created (by a call to DB.NewDB)
 // for a given application.
 type DB struct {
-	// originx and originy are the super-brick corner minimum coordinates
-	originx, originy float64
+	// orgx and orgy are the super-brick corner minimum coordinates
+	orgx, orgy float64
 
 	// length of the edges of the super-brick
-	sizex, sizey float64
+	szx, szy float64
 
 	// number of sub-brick divisions in each direction
 	divx, divy int
 
-	// slice of proxy pointers, one for each bin
+	// Actual bins, allocated in a 1D slice (use coordsToIndex to go from bin
+	// coordinates to index in this slice).
 	bins []*ClientProxy
 
 	// extra bin for "everything else" (points outside super-brick)
 	other *ClientProxy
 }
 
-// NewDB creates and returns a new golq database object.
+// NewDB creates a new database, allocates the bin array, and returns the DB
+// object.
 //
-// The application needs to call this before using the lq facility. The six
-// parameters define the properties of the "super-brick":
-//     - origin: coordinates of one corner of the super-brick, its minimum x
-//               and y extent.
-//     - size: the width and height of the super-brick.
-//     - the number of subdivisions (sub-bricks) along each axis.
-// This routine also allocates the bin array.
-func NewDB(originx, originy, sizex, sizey float64, divx, divy int) *DB {
+// The six parameters define the properties of the 'super-brick':
+//  - orgx/orgy: x/y coordinates of one corner of the super-brick, its minimum x
+//    and y extent.
+//  - sizex/sizey: the width and height of the super-brick.
+//  - divx/divy: the number of subdivisions (sub-bricks) along each axis.
+func NewDB(orgx, orgy, sizex, sizey float64, divx, divy int) *DB {
 	return &DB{
-		originx: originx,
-		originy: originy,
-		sizex:   sizex,
-		sizey:   sizey,
-		divx:    divx,
-		divy:    divy,
-		bins:    make([]*ClientProxy, divx*divy),
+		orgx: orgx,
+		orgy: orgy,
+		szx:  sizex,
+		szy:  sizey,
+		divx: divx,
+		divy: divy,
+		bins: make([]*ClientProxy, divx*divy),
 	}
 }
 
-// Determine index into linear bin array given 2D bin indices
-func (db *DB) binCoordsToBinIndex(ix, iy int) int {
+// coordsToIndex determines the index into linear bin array given 2D bin
+// indices
+func (db *DB) coordsToIndex(ix, iy int) int {
 	return ix*db.divy + iy
 }
 
@@ -104,25 +105,25 @@ func (db *DB) binCoordsToBinIndex(ix, iy int) int {
 // to the bin contents list.
 func (db *DB) binForLocation(x, y float64) **ClientProxy {
 	// if point outside super-brick, return the "other" bin
-	if x < db.originx {
+	if x < db.orgx {
 		return &(db.other)
 	}
-	if y < db.originy {
+	if y < db.orgy {
 		return &(db.other)
 	}
-	if x >= db.originx+db.sizex {
+	if x >= db.orgx+db.szx {
 		return &(db.other)
 	}
-	if y >= db.originy+db.sizey {
+	if y >= db.orgy+db.szy {
 		return &(db.other)
 	}
 
 	// if point inside super-brick, compute the bin coordinates
-	ix := int((x - db.originx) / db.sizex * float64(db.divx))
-	iy := int((y - db.originy) / db.sizey * float64(db.divy))
+	ix := int((x - db.orgx) / db.szx * float64(db.divx))
+	iy := int((y - db.orgy) / db.szy * float64(db.divy))
 
 	// convert to linear bin number
-	i := db.binCoordsToBinIndex(ix, iy)
+	i := db.coordsToIndex(ix, iy)
 
 	// return pointer to that bin
 	return &(db.bins[i])
@@ -246,8 +247,8 @@ func (db *DB) MapOverAllObjectsInLocality(
 	fn ObjCallback,
 	queryState interface{}) {
 	partlyOut := false
-	completelyOutside := x+radius < db.originx || y+radius < db.originy ||
-		x-radius >= db.originx+db.sizex || y-radius >= db.originy+db.sizey
+	completelyOutside := x+radius < db.orgx || y+radius < db.orgy ||
+		x-radius >= db.orgx+db.szx || y-radius >= db.orgy+db.szy
 
 	// is the circle completely outside the "super brick"?
 	if completelyOutside {
@@ -257,10 +258,10 @@ func (db *DB) MapOverAllObjectsInLocality(
 	}
 
 	// compute min and max bin coordinates for each dimension
-	minBinX := int(float64(db.divx) * (x - radius - db.originx) / db.sizex)
-	minBinY := int(float64(db.divy) * (y - radius - db.originy) / db.sizey)
-	maxBinX := int(float64(db.divx) * (x + radius - db.originx) / db.sizex)
-	maxBinY := int(float64(db.divy) * (y + radius - db.originy) / db.sizey)
+	minBinX := int(float64(db.divx) * (x - radius - db.orgx) / db.szx)
+	minBinY := int(float64(db.divy) * (y - radius - db.orgy) / db.szy)
+	maxBinX := int(float64(db.divx) * (x + radius - db.orgx) / db.szx)
+	maxBinY := int(float64(db.divy) * (y + radius - db.orgy) / db.szy)
 
 	// clip bin coordinates
 	if minBinX < 0 {
