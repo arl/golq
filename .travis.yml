@@ -1,7 +1,7 @@
 language: go
 
 go: 
-  - "1.12.x"
+  - "1.18"
   - tip
 
 matrix:
@@ -14,7 +14,6 @@ cache:
     - $GOPATH/pkg/mod
 
 script:
-  - go vet ./...
   - go test -v -race ./...
   - go test -v -cover -covermode=count -coverprofile=coverage.txt ./... > /dev/null
 
