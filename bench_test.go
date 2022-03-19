@@ -184,7 +184,7 @@ func benchmarkObjectsInLocalityLq(b *testing.B, numPts int, radius float64) {
 		db.UpdateForNewLocation(newProxyEntity(ent), ent.x, ent.y)
 	}
 
-	dummyCallback := func(clientObj interface{}, distSquare float64, queryState interface{}) {}
+	dummyCallback := func(clientObj interface{}, sqDist float64, queryState interface{}) {}
 	for n := 0; n < b.N; n++ {
 		// generate random query point
 		x, y := 10*rng.Float64(), 10*rng.Float64()

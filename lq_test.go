@@ -49,15 +49,15 @@ func (m idset) assertIsContained(t *testing.T, id int, contains bool) {
 }
 
 // storeID is a CallBackFunction that stores the entity ID into the set.
-func (m idset) storeID(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
+func (m idset) storeID(clientObject interface{}, sqDist float64, clientQueryState interface{}) {
 	// m := clientQueryState.(idset)
 	m[clientObject.(int)] = struct{}{}
 }
 
 // printEntity is a CallBackFunction that prints the entity.
-func printEntity(clientObject interface{}, distanceSquared float64, clientQueryState interface{}) {
+func printEntity(clientObject interface{}, sqDist float64, clientQueryState interface{}) {
 	id := clientObject.(int)
-	log.Printf("printAllEntities: id:%+v %f\n", id, distanceSquared)
+	log.Printf("printAllEntities: id:%+v %f\n", id, sqDist)
 }
 
 func TestAddObjectToDatabase(t *testing.T) {

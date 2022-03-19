@@ -137,17 +137,15 @@ func (db *DB) UpdateForNewLocation(object *ClientProxy, x, y float64) {
 	// find bin for new location
 	newBin := db.binForLocation(x, y)
 
-	// store location in client object, for future reference
+	// Store location in client object, for future reference.
 	object.x = x
 	object.y = y
 
-	// has object still in the same bin?
-	if newBin == object.bin {
-		return
+	// Has object's changed bin?
+	if newBin != object.bin {
+		object.RemoveFromBin()
+		object.AddToBin(newBin)
 	}
-
-	object.RemoveFromBin()
-	object.AddToBin(newBin)
 }
 
 // ObjCallback is the type of the user-supplied function used to map over
@@ -161,7 +159,7 @@ func (db *DB) UpdateForNewLocation(object *ClientProxy, x, y float64) {
 //    - an empty interface corresponding to the caller-supplied "client query
 //      state" object, typically nil, but can be used to store state between
 //      calls to the ObjCallback.
-type ObjCallback func(clientObj interface{}, distSquare float64, queryState interface{})
+type ObjCallback func(clientObj interface{}, sqDist float64, queryState interface{})
 
 // MapOverAllObjects applies a user-supplied function to all objects in the
 // database, regardless of locality (see DB.MapOverAllObjectsInLocality)
@@ -199,7 +197,7 @@ func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64,
 
 	var iindex, jindex int
 
-	radiusSquared := radius * radius
+	sqRadius := radius * radius
 
 	// loop for x bins across diameter of circle
 	iindex = minBinX * db.divy
@@ -211,7 +209,7 @@ func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64,
 			traverseBinClientObjectList(
 				db.bins[iindex+jindex],
 				x, y,
-				radiusSquared,
+				sqRadius,
 				fn,
 				queryState)
 			jindex++
@@ -228,10 +226,10 @@ func (db *DB) mapOverAllOutsideObjects(
 	fn ObjCallback,
 	queryState interface{}) {
 	co := db.other
-	radiusSquared := radius * radius
+	sqRadius := radius * radius
 
 	// traverse the "other" bin's client object list
-	traverseBinClientObjectList(co, x, y, radiusSquared, fn, queryState)
+	traverseBinClientObjectList(co, x, y, sqRadius, fn, queryState)
 }
 
 // MapOverAllObjectsInLocality applies an application-specific ObjCallback
@@ -297,12 +295,12 @@ func (db *DB) MapOverAllObjectsInLocality(
 }
 
 type findNearestState struct {
-	ignoreObject       interface{}
-	nearestObject      interface{}
-	minDistanceSquared float64
+	ignoreObject  interface{}
+	nearestObject interface{}
+	minSqDist     float64
 }
 
-func findNearestHelper(clientObj interface{}, distanceSquared float64, queryState interface{}) {
+func findNearestHelper(clientObj interface{}, sqDist float64, queryState interface{}) {
 	fns := queryState.(*findNearestState)
 
 	if fns.ignoreObject == clientObj {
@@ -311,9 +309,9 @@ func findNearestHelper(clientObj interface{}, distanceSquared float64, queryStat
 	}
 
 	// record this object if it is the nearest one so far
-	if fns.minDistanceSquared > distanceSquared {
+	if fns.minSqDist > sqDist {
 		fns.nearestObject = clientObj
-		fns.minDistanceSquared = distanceSquared
+		fns.minSqDist = sqDist
 	}
 }
 
@@ -330,8 +328,8 @@ func findNearestHelper(clientObj interface{}, distanceSquared float64, queryStat
 func (db *DB) FindNearestNeighborWithinRadius(x, y, radius float64, ignoreObject interface{}) interface{} {
 	// initialize search state
 	fns := findNearestState{
-		ignoreObject:       ignoreObject,
-		minDistanceSquared: math.MaxFloat64,
+		ignoreObject: ignoreObject,
+		minSqDist:    math.MaxFloat64,
 	}
 
 	// map search helper function over all objects within radius
@@ -424,15 +422,15 @@ func (cp *ClientProxy) RemoveFromBin() {
 // Given a bin's list of client proxies, traverse the list and invoke
 // the given ObjCallback on each object that falls within the
 // search radius.
-func traverseBinClientObjectList(cp *ClientProxy, x, y, radiusSquared float64, fn ObjCallback, state interface{}) {
+func traverseBinClientObjectList(cp *ClientProxy, x, y, sqRadius float64, fn ObjCallback, state interface{}) {
 	for cp != nil {
 		// compute distance (squared) from this client
 		// object to given locality circle's centerpoint
-		distanceSquared := (x-cp.x)*(x-cp.x) + (y-cp.y)*(y-cp.y)
+		sqDist := (x-cp.x)*(x-cp.x) + (y-cp.y)*(y-cp.y)
 
 		// apply function if client object within sphere
-		if distanceSquared < radiusSquared {
-			fn(cp.object, distanceSquared, state)
+		if sqDist < sqRadius {
+			fn(cp.object, sqDist, state)
 		}
 
 		// consider next client object in bin list
