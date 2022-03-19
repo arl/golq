@@ -57,14 +57,9 @@ import "math"
 // Typically one of these would be created (by a call to DB.NewDB)
 // for a given application.
 type DB struct {
-	// orgx and orgy are the super-brick corner minimum coordinates
-	orgx, orgy float64
-
-	// length of the edges of the super-brick
-	szx, szy float64
-
-	// number of sub-brick divisions in each direction
-	divx, divy int
+	orgx, orgy float64 // orgx and orgy are the super-brick corner minimum coordinates
+	szx, szy   float64 // length of the edges of the super-brick
+	divx, divy int     // number of sub-brick divisions in each direction
 
 	// Actual bins, allocated in a 1D slice (use coordsToIndex to go from bin
 	// coordinates to index in this slice).
@@ -104,7 +99,7 @@ func (db *DB) coordsToIndex(ix, iy int) int {
 // terms of its XY coordinates. The bin ID is a pointer to a pointer
 // to the bin contents list.
 func (db *DB) binForLocation(x, y float64) **ClientProxy {
-	// if point outside super-brick, return the "other" bin
+	// If point is outside the super-brick, return the 'other' bin.
 	if x < db.orgx {
 		return &(db.other)
 	}
@@ -118,15 +113,10 @@ func (db *DB) binForLocation(x, y float64) **ClientProxy {
 		return &(db.other)
 	}
 
-	// if point inside super-brick, compute the bin coordinates
+	// Point is inside the super brik, compute the bin coordinates and return that bin.
 	ix := int((x - db.orgx) / db.szx * float64(db.divx))
 	iy := int((y - db.orgy) / db.szy * float64(db.divy))
-
-	// convert to linear bin number
-	i := db.coordsToIndex(ix, iy)
-
-	// return pointer to that bin
-	return &(db.bins[i])
+	return &(db.bins[db.coordsToIndex(ix, iy)])
 }
 
 // UpdateForNewLocation updates a proxy object position in the database.
