@@ -101,7 +101,7 @@ func benchmarkNearestNeighbourLq(b *testing.B, numPts int, radius float64) {
 	ents := randomNEntities(b, src, numPts)
 	db := lq.NewDB[benchEntity](orgx, orgy, szx, szy, divx, divy)
 	for _, ent := range ents {
-		db.UpdateForNewLocation(lq.NewObject(ent), ent.x, ent.y)
+		db.Update(lq.NewObject(ent), ent.x, ent.y)
 	}
 
 	for n := 0; n < b.N; n++ {
@@ -174,7 +174,7 @@ func benchmarkObjectsInLocalityLq(b *testing.B, numPts int, radius float64) {
 	ents := randomNEntities(b, src, numPts)
 	db := lq.NewDB[benchEntity](orgx, orgy, szx, szy, divx, divy)
 	for _, ent := range ents {
-		db.UpdateForNewLocation(lq.NewObject(ent), ent.x, ent.y)
+		db.Update(lq.NewObject(ent), ent.x, ent.y)
 	}
 
 	for n := 0; n < b.N; n++ {

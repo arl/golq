@@ -78,7 +78,7 @@ func TestAddObjectToDatabase(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := NewDB[int](tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
-			db.UpdateForNewLocation(newEntity(1), tt.ptx, tt.pty)
+			db.Update(newEntity(1), tt.ptx, tt.pty)
 
 			ids := make(idset)
 			db.MapOverAllObjects(ids.storeID)
@@ -108,7 +108,7 @@ func TestRemoveObject(t *testing.T) {
 			db := NewDB[int](tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
 			p1 := newEntity(1)
-			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
+			db.Update(p1, tt.ptx, tt.pty)
 			p1.RemoveFromBin()
 
 			ids := make(idset)
@@ -136,8 +136,8 @@ func TestRemoveAllObjects(t *testing.T) {
 			db := NewDB[int](tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
 			p1, p2 := newEntity(1), newEntity(2)
-			db.UpdateForNewLocation(p1, tt.ptx, tt.pty)
-			db.UpdateForNewLocation(p2, tt.ptx, tt.pty)
+			db.Update(p1, tt.ptx, tt.pty)
+			db.Update(p2, tt.ptx, tt.pty)
 			db.RemoveAllObjects()
 
 			ids := make(idset)
@@ -178,9 +178,9 @@ func TestObjectLocality(t *testing.T) {
 		t.Run(fmt.Sprintf("locality test %d", i), func(t *testing.T) {
 			db := NewDB[int](0, 0, 10, 10, 5, 5)
 
-			db.UpdateForNewLocation(newEntity(1), tt.p1x, tt.p1y)
-			db.UpdateForNewLocation(newEntity(2), tt.p2x, tt.p2y)
-			db.UpdateForNewLocation(newEntity(3), tt.p3x, tt.p3y)
+			db.Update(newEntity(1), tt.p1x, tt.p1y)
+			db.Update(newEntity(2), tt.p2x, tt.p2y)
+			db.Update(newEntity(3), tt.p3x, tt.p3y)
 
 			ids := make(idset)
 			db.MapOverAllObjectsInLocality(tt.cx, tt.cy, tt.cr, ids.storeID)
@@ -199,9 +199,9 @@ func TestBinRelinking(t *testing.T) {
 		p1 := newEntity(1)
 		p2 := newEntity(2)
 		p3 := newEntity(3)
-		db.UpdateForNewLocation(p1, 5, 5)
-		db.UpdateForNewLocation(p2, 5, 5)
-		db.UpdateForNewLocation(p3, 5, 5)
+		db.Update(p1, 5, 5)
+		db.Update(p2, 5, 5)
+		db.Update(p3, 5, 5)
 
 		switch i {
 		case 1:
@@ -236,9 +236,9 @@ func TestNearestNeighbor(t *testing.T) {
 		t.Run(fmt.Sprintf("nearest test %d", i), func(t *testing.T) {
 			db := NewDB[int](0, 0, 10, 10, 5, 5)
 
-			db.UpdateForNewLocation(newEntity(1), tt.p1x, tt.p1y)
-			db.UpdateForNewLocation(newEntity(2), tt.p2x, tt.p2y)
-			db.UpdateForNewLocation(newEntity(3), tt.p3x, tt.p3y)
+			db.Update(newEntity(1), tt.p1x, tt.p1y)
+			db.Update(newEntity(2), tt.p2x, tt.p2y)
+			db.Update(newEntity(3), tt.p3x, tt.p3y)
 
 			got, found := db.FindNearestNeighborWithinRadius(tt.cx, tt.cy, tt.cr, tt.ignore)
 			if found != tt.wantFound {

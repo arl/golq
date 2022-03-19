@@ -32,7 +32,7 @@
 // creates an Object with :
 //  p := NewObject(myObj).
 // When a client object moves, the application calls :
-//  p.UpdateForNewLocation()
+//  p.Update()
 // To perform a query, DB.MapOverAllObjectsInLocality is passed an
 // application-supplied ObjectFunc function to be applied to all client
 // objects in the locality. See ObjectFunc below for more detail.
@@ -119,12 +119,12 @@ func (db *DB[T]) binForLocation(x, y float64) **Object[T] {
 	return &(db.bins[db.coordsToIndex(ix, iy)])
 }
 
-// UpdateForNewLocation updates a proxy object position in the database.
+// Update updates a proxy object position in the database.
 //
 // It should be called for each client object every time its location
 // changes. For example, in an animation application, this would be called
 // each frame for every moving object.
-func (db *DB[T]) UpdateForNewLocation(object *Object[T], x, y float64) {
+func (db *DB[T]) Update(object *Object[T], x, y float64) {
 	// find bin for new location
 	newBin := db.binForLocation(x, y)
 
