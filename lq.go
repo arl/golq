@@ -176,26 +176,19 @@ func (db *DB) RemoveAllObjects() {
 // This subroutine of MapOverAllObjectsInLocality efficiently traverses a
 // subset of bins specified by max and min bin coordinates.
 func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64, fn ObjectFunc, minBinX, minBinY, maxBinX, maxBinY int) {
-
-	var iindex, jindex int
-
 	sqRadius := radius * radius
 
-	// loop for x bins across diameter of circle
-	iindex = minBinX * db.divy
+	// Loop for x bins across diameter of circle.
+	idx := minBinX * db.divy
 	for i := minBinX; i <= maxBinX; i++ {
-		// loop for y bins across diameter of circle
-		jindex = minBinY
+		// Loop for y bins across diameter of circle.
+		jdx := minBinY
 		for j := minBinY; j <= maxBinY; j++ {
-			// traverse current bin's client object list
-			traverseBinClientObjectList(
-				db.bins[iindex+jindex],
-				x, y,
-				sqRadius,
-				fn)
-			jindex++
+			// Traverse current bin's client object list.
+			traverseBinClientObjectList(db.bins[idx+jdx], x, y, sqRadius, fn)
+			jdx++
 		}
-		iindex += db.divy
+		idx += db.divy
 	}
 }
 
@@ -227,7 +220,6 @@ func (db *DB) MapOverAllObjectsInLocality(x, y, radius float64, fn ObjectFunc) {
 	// is the circle completely outside the "super brick"?
 	if completelyOutside {
 		db.mapOverAllOutsideObjects(x, y, radius, fn)
-
 	}
 
 	// compute min and max bin coordinates for each dimension
@@ -264,19 +256,19 @@ func (db *DB) MapOverAllObjectsInLocality(x, y, radius float64, fn ObjectFunc) {
 }
 
 type findNearest struct {
-	ignoreObject  interface{}
-	nearestObject interface{}
-	minSqDist     float64
+	ignored   interface{}
+	nearest   interface{}
+	minSqDist float64
 }
 
 func (f *findNearest) do(clientObj interface{}, sqDist float64) {
-	if f.ignoreObject == clientObj {
+	if f.ignored == clientObj {
 		return
 	}
 
 	// Record this object if it is the nearest one so far.
 	if f.minSqDist > sqDist {
-		f.nearestObject = clientObj
+		f.nearest = clientObj
 		f.minSqDist = sqDist
 	}
 }
@@ -285,24 +277,23 @@ func (f *findNearest) do(clientObj interface{}, sqDist float64) {
 // whose key-point is nearest to a given location yet within a given radius.
 //
 // That is, it finds the object (if any) within a given search circle which is
-// nearest to the circle's center. The ignoreObject argument can be used to
-// exclude an object from consideration (or it can be nil). This is useful when
-// looking for the nearest neighbor of an object in the database, since
-// otherwise it would be its own nearest neighbor.
-// The function returns an interface to the nearest object, or nil if none is
-// found.
-func (db *DB) FindNearestNeighborWithinRadius(x, y, radius float64, ignoreObject interface{}) interface{} {
+// nearest to the circle's center. The ignored argument can be used to exclude
+// an object from consideration (or it can be nil). This is useful when looking
+// for the nearest neighbor of an object in the database, since otherwise it
+// would be its own nearest neighbor. The function returns an interface to the
+// nearest object, or nil if none is found.
+func (db *DB) FindNearestNeighborWithinRadius(x, y, radius float64, ignored interface{}) interface{} {
 	// Initialize search state
 	fns := findNearest{
-		ignoreObject: ignoreObject,
-		minSqDist:    math.MaxFloat64,
+		ignored:   ignored,
+		minSqDist: math.MaxFloat64,
 	}
 
 	// map search helper function over all objects within radius
 	db.MapOverAllObjectsInLocality(x, y, radius, fns.do)
 
 	// Return nearest object found, if any.
-	return fns.nearestObject
+	return fns.nearest
 }
 
 // ClientProxy is a proxy for a client (application) object in the spatial
