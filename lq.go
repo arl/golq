@@ -135,7 +135,7 @@ func (db *DB[T]) UpdateForNewLocation(object *ClientProxy[T], x, y float64) {
 	// Has object's changed bin?
 	if newBin != object.bin {
 		object.RemoveFromBin()
-		object.AddToBin(newBin)
+		object.addToBin(newBin)
 	}
 }
 
@@ -326,9 +326,9 @@ func NewClientProxy[T any](obj T) *ClientProxy[T] {
 	return &ClientProxy[T]{object: obj}
 }
 
-// AddToBin adds a given client object to a given bin, linking it into the
+// addToBin adds a given client object to a given bin, linking it into the
 // bin contents list.
-func (cp *ClientProxy[T]) AddToBin(bin **ClientProxy[T]) {
+func (cp *ClientProxy[T]) addToBin(bin **ClientProxy[T]) {
 	// if bin is currently empty
 	if *bin == nil {
 		cp.prev = nil
