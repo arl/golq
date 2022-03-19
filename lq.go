@@ -139,27 +139,21 @@ func (db *DB) UpdateForNewLocation(object *ClientProxy, x, y float64) {
 	}
 }
 
-// ObjCallback is the type of the user-supplied function used to map over
-// client objects.
-//
-// An instance of ObjCallback takes three arguments:
-//
-//    - an empty interface corresponding to a ClientProxy's "object".
-//    - the square of the distance from the center of the search locality
-//      circle (x,y) to object's key-point.
-//    - an empty interface corresponding to the caller-supplied "client query
-//      state" object, typically nil, but can be used to store state between
-//      calls to the ObjCallback.
-type ObjCallback func(clientObj interface{}, sqDist float64, queryState interface{})
+// ObjectFunc is the function called, for each object, when mapping over a set
+// of objects. It gets called with:
+//  - an empty interface corresponding to a ClientProxy's "object".
+//  - the squared distance from the center of the search locality circle (x,y)
+//    to object's key-point.
+type ObjectFunc func(clientObj interface{}, sqDist float64)
 
 // MapOverAllObjects applies a user-supplied function to all objects in the
 // database, regardless of locality (see DB.MapOverAllObjectsInLocality)
-func (db *DB) MapOverAllObjects(fn ObjCallback, queryState interface{}) {
+func (db *DB) MapOverAllObjects(fn ObjectFunc) {
 	bincount := db.divx * db.divy
 	for i := 0; i < bincount; i++ {
-		db.bins[i].mapOverAllObjectsInBin(fn, queryState)
+		db.bins[i].mapOverAllObjectsInBin(fn)
 	}
-	db.other.mapOverAllObjectsInBin(fn, queryState)
+	db.other.mapOverAllObjectsInBin(fn)
 }
 
 // RemoveAllObjects removes (all proxies for) all objects from all bins.
@@ -181,10 +175,7 @@ func (db *DB) RemoveAllObjects() {
 
 // This subroutine of MapOverAllObjectsInLocality efficiently traverses a
 // subset of bins specified by max and min bin coordinates.
-func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64,
-	fn ObjCallback,
-	queryState interface{},
-	minBinX, minBinY, maxBinX, maxBinY int) {
+func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64, fn ObjectFunc, minBinX, minBinY, maxBinX, maxBinY int) {
 
 	var iindex, jindex int
 
@@ -201,8 +192,7 @@ func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64,
 				db.bins[iindex+jindex],
 				x, y,
 				sqRadius,
-				fn,
-				queryState)
+				fn)
 			jindex++
 		}
 		iindex += db.divy
@@ -212,15 +202,12 @@ func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64,
 // If the query region (sphere) extends outside of the "super-brick"
 // we need to check for objects in the catch-all "other" bin which
 // holds any object which are not inside the regular sub-bricks
-func (db *DB) mapOverAllOutsideObjects(
-	x, y, radius float64,
-	fn ObjCallback,
-	queryState interface{}) {
+func (db *DB) mapOverAllOutsideObjects(x, y, radius float64, fn ObjectFunc) {
 	co := db.other
 	sqRadius := radius * radius
 
 	// traverse the "other" bin's client object list
-	traverseBinClientObjectList(co, x, y, sqRadius, fn, queryState)
+	traverseBinClientObjectList(co, x, y, sqRadius, fn)
 }
 
 // MapOverAllObjectsInLocality applies an application-specific ObjCallback
@@ -232,19 +219,15 @@ func (db *DB) mapOverAllOutsideObjects(
 // This routine uses the "lq" database to quickly reject any objects in bins
 // which do not overlap with the circle of interest. Incremental calculation of
 // index values is used to efficiently traverse the bins of interest.
-func (db *DB) MapOverAllObjectsInLocality(
-	x, y, radius float64,
-	fn ObjCallback,
-	queryState interface{}) {
+func (db *DB) MapOverAllObjectsInLocality(x, y, radius float64, fn ObjectFunc) {
 	partlyOut := false
 	completelyOutside := x+radius < db.orgx || y+radius < db.orgy ||
 		x-radius >= db.orgx+db.szx || y-radius >= db.orgy+db.szy
 
 	// is the circle completely outside the "super brick"?
 	if completelyOutside {
-		db.mapOverAllOutsideObjects(x, y, radius, fn,
-			queryState)
-		return
+		db.mapOverAllOutsideObjects(x, y, radius, fn)
+
 	}
 
 	// compute min and max bin coordinates for each dimension
@@ -273,36 +256,29 @@ func (db *DB) MapOverAllObjectsInLocality(
 
 	// map function over outside objects if necessary (if clipped)
 	if partlyOut {
-		db.mapOverAllOutsideObjects(x, y, radius, fn, queryState)
+		db.mapOverAllOutsideObjects(x, y, radius, fn)
 	}
 
 	// map function over objects in bins
-	db.mapOverAllObjectsInLocalityClipped(x, y,
-		radius,
-		fn,
-		queryState,
-		minBinX, minBinY,
-		maxBinX, maxBinY)
+	db.mapOverAllObjectsInLocalityClipped(x, y, radius, fn, minBinX, minBinY, maxBinX, maxBinY)
 }
 
-type findNearestState struct {
+type findNearest struct {
 	ignoreObject  interface{}
 	nearestObject interface{}
 	minSqDist     float64
 }
 
-func findNearestHelper(clientObj interface{}, sqDist float64, queryState interface{}) {
-	fns := queryState.(*findNearestState)
-
-	if fns.ignoreObject == clientObj {
+func (f *findNearest) do(clientObj interface{}, sqDist float64) {
+	if f.ignoreObject == clientObj {
 		// do nothing if this is the "ignoreObject"
 		return
 	}
 
 	// record this object if it is the nearest one so far
-	if fns.minSqDist > sqDist {
-		fns.nearestObject = clientObj
-		fns.minSqDist = sqDist
+	if f.minSqDist > sqDist {
+		f.nearestObject = clientObj
+		f.minSqDist = sqDist
 	}
 }
 
@@ -317,16 +293,16 @@ func findNearestHelper(clientObj interface{}, sqDist float64, queryState interfa
 // The function returns an interface to the nearest object, or nil if none is
 // found.
 func (db *DB) FindNearestNeighborWithinRadius(x, y, radius float64, ignoreObject interface{}) interface{} {
-	// initialize search state
-	fns := findNearestState{
+	// Initialize search state
+	fns := findNearest{
 		ignoreObject: ignoreObject,
 		minSqDist:    math.MaxFloat64,
 	}
 
 	// map search helper function over all objects within radius
-	db.MapOverAllObjectsInLocality(x, y, radius, findNearestHelper, &fns)
+	db.MapOverAllObjectsInLocality(x, y, radius, fns.do)
 
-	// return nearest object found, if any
+	// Return nearest object found, if any.
 	return fns.nearestObject
 }
 
@@ -413,7 +389,7 @@ func (cp *ClientProxy) RemoveFromBin() {
 // Given a bin's list of client proxies, traverse the list and invoke
 // the given ObjCallback on each object that falls within the
 // search radius.
-func traverseBinClientObjectList(cp *ClientProxy, x, y, sqRadius float64, fn ObjCallback, state interface{}) {
+func traverseBinClientObjectList(cp *ClientProxy, x, y, sqRadius float64, fn ObjectFunc) {
 	for cp != nil {
 		// compute distance (squared) from this client
 		// object to given locality circle's centerpoint
@@ -421,7 +397,7 @@ func traverseBinClientObjectList(cp *ClientProxy, x, y, sqRadius float64, fn Obj
 
 		// apply function if client object within sphere
 		if sqDist < sqRadius {
-			fn(cp.object, sqDist, state)
+			fn(cp.object, sqDist)
 		}
 
 		// consider next client object in bin list
@@ -429,10 +405,10 @@ func traverseBinClientObjectList(cp *ClientProxy, x, y, sqRadius float64, fn Obj
 	}
 }
 
-func (cp *ClientProxy) mapOverAllObjectsInBin(fn ObjCallback, queryState interface{}) {
+func (cp *ClientProxy) mapOverAllObjectsInBin(fn ObjectFunc) {
 	// walk down proxy list, applying call-back function to each one
 	for cp != nil {
-		fn(cp.object, 0, queryState)
+		fn(cp.object, 0)
 		cp = cp.next
 	}
 }
