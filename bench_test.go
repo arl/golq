@@ -180,7 +180,7 @@ func benchmarkObjectsInLocalityLq(b *testing.B, numPts int, radius float64) {
 	for n := 0; n < b.N; n++ {
 		// generate random query point
 		x, y := 10*rng.Float64(), 10*rng.Float64()
-		db.MapOverAllObjectsInLocality(x, y, radius, func(_ benchEntity, _ float64) {})
+		db.ForEachWithinRadius(x, y, radius, func(_ benchEntity, _ float64) {})
 	}
 }
 

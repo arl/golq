@@ -81,7 +81,7 @@ func TestAddObjectToDatabase(t *testing.T) {
 			db.Update(newEntity(1), tt.ptx, tt.pty)
 
 			ids := make(idset)
-			db.MapOverAllObjects(ids.storeID)
+			db.ForEachObject(ids.storeID)
 
 			ids.assertContains(t, 1)
 		})
@@ -112,7 +112,7 @@ func TestRemoveObject(t *testing.T) {
 			p1.RemoveFromBin()
 
 			ids := make(idset)
-			db.MapOverAllObjects(ids.storeID)
+			db.ForEachObject(ids.storeID)
 
 			ids.assertNotContains(t, 1)
 		})
@@ -141,7 +141,7 @@ func TestRemoveAllObjects(t *testing.T) {
 			db.RemoveAllObjects()
 
 			ids := make(idset)
-			db.MapOverAllObjects(ids.storeID)
+			db.ForEachObject(ids.storeID)
 			ids.assertEmpty(t)
 		})
 	}
@@ -183,7 +183,7 @@ func TestObjectLocality(t *testing.T) {
 			db.Update(newEntity(3), tt.p3x, tt.p3y)
 
 			ids := make(idset)
-			db.MapOverAllObjectsInLocality(tt.cx, tt.cy, tt.cr, ids.storeID)
+			db.ForEachWithinRadius(tt.cx, tt.cy, tt.cr, ids.storeID)
 
 			ids.assertIsContained(t, 1, tt.r1)
 			ids.assertIsContained(t, 2, tt.r2)
@@ -213,7 +213,7 @@ func TestBinRelinking(t *testing.T) {
 		}
 
 		ids := make(idset)
-		db.MapOverAllObjectsInLocality(5, 5, 1, ids.storeID)
+		db.ForEachWithinRadius(5, 5, 1, ids.storeID)
 		ids.assertIsContained(t, 1, i != 1)
 		ids.assertIsContained(t, 2, i != 2)
 		ids.assertIsContained(t, 3, i != 3)
