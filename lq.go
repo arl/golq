@@ -34,12 +34,12 @@
 // When a client object moves, the application calls :
 //  p.UpdateForNewLocation()
 // To perform a query, DB.MapOverAllObjectsInLocality is passed an
-// application-supplied ObjCallback function to be applied to all client
-// objects in the locality. See ObjCallback below for more detail.
-//  func myObjCallback (clientObj interface{}, sqDist float64, queryState interface{}) {
+// application-supplied ObjectFunc function to be applied to all client
+// objects in the locality. See ObjectFunc below for more detail.
+//  func myObjectFunc (clientObj interface{}, sqDist float64) {
 //      // do something with clientObj...
 //  }
-//  DB.MapOverAllObjectsInLocality(x, y, radius, myObjCallback, nil)
+//  DB.MapOverAllObjectsInLocality(x, y, radius, myObjectFunc, nil)
 // The DB.FindNearestNeighborWithinRadius function can be used to find a single
 // nearest neighbor using the database. Note that "locality query" is also
 // known as neighborhood query, neighborhood search, near neighbor search, and
@@ -175,7 +175,7 @@ func (db *DB) RemoveAllObjects() {
 
 // This subroutine of MapOverAllObjectsInLocality efficiently traverses a
 // subset of bins specified by max and min bin coordinates.
-func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64, fn ObjectFunc, minBinX, minBinY, maxBinX, maxBinY int) {
+func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64, f ObjectFunc, minBinX, minBinY, maxBinX, maxBinY int) {
 	sqRadius := radius * radius
 
 	// Loop for x bins across diameter of circle.
@@ -185,7 +185,7 @@ func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64, fn Object
 		jdx := minBinY
 		for j := minBinY; j <= maxBinY; j++ {
 			// Traverse current bin's client object list.
-			traverseBinClientObjectList(db.bins[idx+jdx], x, y, sqRadius, fn)
+			traverseBinClientObjectList(db.bins[idx+jdx], x, y, sqRadius, f)
 			jdx++
 		}
 		idx += db.divy
@@ -195,31 +195,31 @@ func (db *DB) mapOverAllObjectsInLocalityClipped(x, y, radius float64, fn Object
 // If the query region (sphere) extends outside of the "super-brick"
 // we need to check for objects in the catch-all "other" bin which
 // holds any object which are not inside the regular sub-bricks
-func (db *DB) mapOverAllOutsideObjects(x, y, radius float64, fn ObjectFunc) {
+func (db *DB) mapOverAllOutsideObjects(x, y, radius float64, f ObjectFunc) {
 	co := db.other
 	sqRadius := radius * radius
 
 	// traverse the "other" bin's client object list
-	traverseBinClientObjectList(co, x, y, sqRadius, fn)
+	traverseBinClientObjectList(co, x, y, sqRadius, f)
 }
 
-// MapOverAllObjectsInLocality applies an application-specific ObjCallback
-// to all objects in a certain locality.
+// MapOverAllObjectsInLocality applies an application-specific ObjectFunc to all
+// objects in a certain locality.
 //
 // The locality is specified as a circle with a given center and radius. All
 // objects whose location (key-point) is within this circle are identified and
-// the fn ObjCallback function is applied to them.
-// This routine uses the "lq" database to quickly reject any objects in bins
-// which do not overlap with the circle of interest. Incremental calculation of
-// index values is used to efficiently traverse the bins of interest.
-func (db *DB) MapOverAllObjectsInLocality(x, y, radius float64, fn ObjectFunc) {
+// the fn ObjectFunc function is applied to them. This routine uses the "lq"
+// database to quickly reject any objects in bins which do not overlap with the
+// circle of interest. Incremental calculation of index values is used to
+// efficiently traverse the bins of interest.
+func (db *DB) MapOverAllObjectsInLocality(x, y, radius float64, f ObjectFunc) {
 	partlyOut := false
 	completelyOutside := x+radius < db.orgx || y+radius < db.orgy ||
 		x-radius >= db.orgx+db.szx || y-radius >= db.orgy+db.szy
 
 	// is the circle completely outside the "super brick"?
 	if completelyOutside {
-		db.mapOverAllOutsideObjects(x, y, radius, fn)
+		db.mapOverAllOutsideObjects(x, y, radius, f)
 	}
 
 	// compute min and max bin coordinates for each dimension
@@ -248,11 +248,11 @@ func (db *DB) MapOverAllObjectsInLocality(x, y, radius float64, fn ObjectFunc) {
 
 	// map function over outside objects if necessary (if clipped)
 	if partlyOut {
-		db.mapOverAllOutsideObjects(x, y, radius, fn)
+		db.mapOverAllOutsideObjects(x, y, radius, f)
 	}
 
 	// map function over objects in bins
-	db.mapOverAllObjectsInLocalityClipped(x, y, radius, fn, minBinX, minBinY, maxBinX, maxBinY)
+	db.mapOverAllObjectsInLocalityClipped(x, y, radius, f, minBinX, minBinY, maxBinX, maxBinY)
 }
 
 type findNearest struct {
@@ -374,7 +374,7 @@ func (cp *ClientProxy) RemoveFromBin() {
 }
 
 // Given a bin's list of client proxies, traverse the list and invoke
-// the given ObjCallback on each object that falls within the
+// the given ObjectFunc on each object that falls within the
 // search radius.
 func traverseBinClientObjectList(cp *ClientProxy, x, y, sqRadius float64, fn ObjectFunc) {
 	for cp != nil {
