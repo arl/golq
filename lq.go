@@ -89,6 +89,12 @@ func NewDB[T comparable](xorg, yorg, xsize, ysize float64, xdiv, divy int) *DB[T
 	}
 }
 
+func (db *DB[T]) Attach(t T, x, y float64) *Object[T] {
+	obj := &Object[T]{object: t}
+	db.Update(obj, x, y)
+	return obj
+}
+
 // coordsToIndex determines the index into linear bin array given 2D bin
 // indices
 func (db *DB[T]) coordsToIndex(ix, iy int) int {
@@ -316,14 +322,6 @@ type Object[T any] struct {
 
 	// Object's location ("key point") used for spatial sorting.
 	x, y float64
-}
-
-// NewObject creates a new golq.Object from an user provided object.
-// User-provided objects are not directly added to a golq.DB, golq.Object are.
-// As such, golq.Object are links between the database and user objects, they
-// keep track of the bin they're in, and their position.
-func NewObject[T any](obj T) *Object[T] {
-	return &Object[T]{object: obj}
 }
 
 // addToBin adds a given client object to a given bin, linking it into the bin

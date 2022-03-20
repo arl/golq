@@ -6,11 +6,6 @@ import (
 	"testing"
 )
 
-// create the test client proxy
-func newEntity(id int) *Object[int] {
-	return NewObject(id)
-}
-
 type set[K comparable] map[K]struct{}
 
 type idset set[int]
@@ -78,7 +73,7 @@ func TestAddObjectToDatabase(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := NewDB[int](tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
-			db.Update(newEntity(1), tt.ptx, tt.pty)
+			db.Attach(1, tt.ptx, tt.pty)
 
 			ids := make(idset)
 			db.ForEachObject(ids.storeID)
@@ -107,8 +102,7 @@ func TestRemoveObject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := NewDB[int](tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
-			p1 := newEntity(1)
-			db.Update(p1, tt.ptx, tt.pty)
+			p1 := db.Attach(1, tt.ptx, tt.pty)
 			p1.RemoveFromBin()
 
 			ids := make(idset)
@@ -135,9 +129,8 @@ func TestRemoveAllObjects(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := NewDB[int](tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
-			p1, p2 := newEntity(1), newEntity(2)
-			db.Update(p1, tt.ptx, tt.pty)
-			db.Update(p2, tt.ptx, tt.pty)
+			db.Attach(1, tt.ptx, tt.pty)
+			db.Attach(2, tt.ptx, tt.pty)
 			db.RemoveAllObjects()
 
 			ids := make(idset)
@@ -178,9 +171,9 @@ func TestObjectLocality(t *testing.T) {
 		t.Run(fmt.Sprintf("locality test %d", i), func(t *testing.T) {
 			db := NewDB[int](0, 0, 10, 10, 5, 5)
 
-			db.Update(newEntity(1), tt.p1x, tt.p1y)
-			db.Update(newEntity(2), tt.p2x, tt.p2y)
-			db.Update(newEntity(3), tt.p3x, tt.p3y)
+			db.Attach(1, tt.p1x, tt.p1y)
+			db.Attach(2, tt.p2x, tt.p2y)
+			db.Attach(3, tt.p3x, tt.p3y)
 
 			ids := make(idset)
 			db.ForEachWithinRadius(tt.cx, tt.cy, tt.cr, ids.storeID)
@@ -196,12 +189,9 @@ func TestBinRelinking(t *testing.T) {
 	for i := range []int{1, 2, 3} {
 		db := NewDB[int](0, 0, 10, 10, 5, 5)
 
-		p1 := newEntity(1)
-		p2 := newEntity(2)
-		p3 := newEntity(3)
-		db.Update(p1, 5, 5)
-		db.Update(p2, 5, 5)
-		db.Update(p3, 5, 5)
+		p1 := db.Attach(1, 5, 5)
+		p2 := db.Attach(2, 5, 5)
+		p3 := db.Attach(3, 5, 5)
 
 		switch i {
 		case 1:
@@ -236,9 +226,9 @@ func TestNearestNeighbor(t *testing.T) {
 		t.Run(fmt.Sprintf("nearest test %d", i), func(t *testing.T) {
 			db := NewDB[int](0, 0, 10, 10, 5, 5)
 
-			db.Update(newEntity(1), tt.p1x, tt.p1y)
-			db.Update(newEntity(2), tt.p2x, tt.p2y)
-			db.Update(newEntity(3), tt.p3x, tt.p3y)
+			db.Attach(1, tt.p1x, tt.p1y)
+			db.Attach(2, tt.p2x, tt.p2y)
+			db.Attach(3, tt.p3x, tt.p3y)
 
 			got, found := db.FindNearestNeighborWithinRadius(tt.cx, tt.cy, tt.cr, tt.ignore)
 			if found != tt.wantFound {
