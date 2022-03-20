@@ -1,0 +1,13 @@
+on: [push, pull_request]
+name: Coverage
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.18
+      - run: go test -coverprofile=coverage.txt && bash <(curl -s https://codecov.io/bash)

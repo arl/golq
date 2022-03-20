@@ -1,9 +1,9 @@
 golq : 2D Locality Queries
 ====
 
-[![Build Status](https://travis-ci.org/arl/golq.svg?branch=master)](https://travis-ci.org/arl/golq)
-[![codecov](https://codecov.io/gh/arl/golq/branch/master/graph/badge.svg?token=q6Wy8R2fGA)](undefined)
-[![Go Reference](https://pkg.go.dev/badge/github.com/arl/golq.svg)](https://pkg.go.dev/github.com/arl/golq)
+[![Build Status](https://github.com/arl/golq/workflows/Tests/badge.svg)](https://github.com/arl/golq/actions)
+[![codecov](https://codecov.io/gh/arl/golq/branch/main/graph/badge.svg)](https://codecov.io/gh/arl/golq)
+[![pkg.go.dev](https://pkg.go.dev/badge/github.com/arl/golq.svg)](https://pkg.go.dev/github.com/arl/golq)
 
 **2D locality queries in Go**
 
