@@ -89,10 +89,37 @@ func NewDB[T comparable](xorg, yorg, xsize, ysize float64, xdiv, divy int) *DB[T
 	}
 }
 
+// Attach attaches a new object to the database and returns a proxy object.
 func (db *DB[T]) Attach(t T, x, y float64) *Object[T] {
 	obj := &Object[T]{object: t}
 	db.Update(obj, x, y)
 	return obj
+}
+
+// Detach detaches the given object from the database.
+func (db *DB[T]) Detach(obj *Object[T]) {
+	obj.removeFromBin()
+	return
+}
+
+// Update updates a proxy object position in the database.
+//
+// It should be called for each client object every time its location
+// changes. For example, in an animation application, this would be called
+// each frame for every moving object.
+func (db *DB[T]) Update(obj *Object[T], x, y float64) {
+	// find bin for new location
+	newBin := db.binForLocation(x, y)
+
+	// Store location in client object, for future reference.
+	obj.x = x
+	obj.y = y
+
+	// Has object's changed bin?
+	if newBin != obj.bin {
+		obj.removeFromBin()
+		obj.addToBin(newBin)
+	}
 }
 
 // coordsToIndex determines the index into linear bin array given 2D bin
@@ -125,26 +152,6 @@ func (db *DB[T]) binForLocation(x, y float64) **Object[T] {
 	return &(db.bins[db.coordsToIndex(ix, iy)])
 }
 
-// Update updates a proxy object position in the database.
-//
-// It should be called for each client object every time its location
-// changes. For example, in an animation application, this would be called
-// each frame for every moving object.
-func (db *DB[T]) Update(obj *Object[T], x, y float64) {
-	// find bin for new location
-	newBin := db.binForLocation(x, y)
-
-	// Store location in client object, for future reference.
-	obj.x = x
-	obj.y = y
-
-	// Has object's changed bin?
-	if newBin != obj.bin {
-		obj.RemoveFromBin()
-		obj.addToBin(newBin)
-	}
-}
-
 // ObjectFunc is the function called, for each object, when mapping over a set
 // of objects. ObjectFunc gets called with the object in question and the
 // squared distance from the center of the search locality circle (x,y) to the
@@ -161,19 +168,19 @@ func (db *DB[T]) ForEachObject(fn ObjectFunc[T]) {
 	db.other.traverseBin(fn)
 }
 
-// RemoveAllObjects removes (all proxies for) all objects from all bins.
-func (db *DB[T]) RemoveAllObjects() {
+// DetachAll detaches all proxy objects.
+func (db *DB[T]) DetachAll() {
 	for i := range db.bins {
 		pbin := &(db.bins[i])
 		for *pbin != nil {
-			(*pbin).RemoveFromBin()
+			(*pbin).removeFromBin()
 		}
 	}
 
 	if db.other != nil {
 		pbin := &(db.other)
 		for *pbin != nil {
-			(*pbin).RemoveFromBin()
+			(*pbin).removeFromBin()
 		}
 	}
 }
@@ -341,9 +348,9 @@ func (cp *Object[T]) addToBin(bin **Object[T]) {
 	cp.bin = bin
 }
 
-// RemoveFromBin removes a given client object from its current bin, unlinking
+// removeFromBin removes a given client object from its current bin, unlinking
 // it from the bin contents list.
-func (cp *Object[T]) RemoveFromBin() {
+func (cp *Object[T]) removeFromBin() {
 	// Adjust pointers if object is currently in a bin
 	if cp.bin != nil {
 		// If this object is at the head of the list, move the bin

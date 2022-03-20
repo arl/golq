@@ -103,7 +103,7 @@ func TestRemoveObject(t *testing.T) {
 			db := NewDB[int](tt.orgx, tt.orgy, tt.szx, tt.szy, tt.divx, tt.divy)
 
 			p1 := db.Attach(1, tt.ptx, tt.pty)
-			p1.RemoveFromBin()
+			p1.removeFromBin()
 
 			ids := make(idset)
 			db.ForEachObject(ids.storeID)
@@ -131,7 +131,7 @@ func TestRemoveAllObjects(t *testing.T) {
 
 			db.Attach(1, tt.ptx, tt.pty)
 			db.Attach(2, tt.ptx, tt.pty)
-			db.RemoveAllObjects()
+			db.DetachAll()
 
 			ids := make(idset)
 			db.ForEachObject(ids.storeID)
@@ -195,11 +195,11 @@ func TestBinRelinking(t *testing.T) {
 
 		switch i {
 		case 1:
-			p1.RemoveFromBin()
+			p1.removeFromBin()
 		case 2:
-			p2.RemoveFromBin()
+			p2.removeFromBin()
 		case 3:
-			p3.RemoveFromBin()
+			p3.removeFromBin()
 		}
 
 		ids := make(idset)
