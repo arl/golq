@@ -202,21 +202,23 @@ func (db *DB[T]) forEachObjectOutside(x, y, radius float64, f ObjectFunc[T]) {
 	traverseBinWithinRadius(co, x, y, sqRadius, f)
 }
 
-// ForEachWithinRadius applies an application-specific ObjectFunc to all
-// objects in a certain locality.
+// ForEachWithinRadius applies an application-specific ObjectFunc to all objects
+// in a certain locality.
 //
 // The locality is specified as a circle with a given center and radius. All
 // objects whose location (key-point) is within this circle are identified and
-// the fn ObjectFunc function is applied to them. This routine uses the "lq"
+// the fn ObjectFunc function is applied to them. This method uses the lq
 // database to quickly reject any objects in bins which do not overlap with the
 // circle of interest. Incremental calculation of index values is used to
 // efficiently traverse the bins of interest.
 func (db *DB[T]) ForEachWithinRadius(x, y, radius float64, f ObjectFunc[T]) {
 	partlyOut := false
-	completelyOutside := x+radius < db.xorg || y+radius < db.yorg ||
-		x-radius >= db.xorg+db.szx || y-radius >= db.yorg+db.szy
+	completelyOutside := x+radius < db.xorg ||
+		y+radius < db.yorg ||
+		x-radius >= db.xorg+db.szx ||
+		y-radius >= db.yorg+db.szy
 
-	// is the circle completely outside the "super brick"?
+	// Is the circle completely outside the "super brick"?
 	if completelyOutside {
 		db.forEachObjectOutside(x, y, radius, f)
 	}
@@ -245,12 +247,12 @@ func (db *DB[T]) ForEachWithinRadius(x, y, radius float64, f ObjectFunc[T]) {
 		maxBinY = db.ydiv - 1
 	}
 
-	// map function over outside objects if necessary (if clipped)
+	// Map function over outside objects if necessary (if clipped)
 	if partlyOut {
 		db.forEachObjectOutside(x, y, radius, f)
 	}
 
-	// map function over objects in bins
+	// Map function over objects in bins
 	db.forEachObjectInLocalityClipped(x, y, radius, f, minBinX, minBinY, maxBinX, maxBinY)
 }
 
@@ -301,7 +303,7 @@ func (db *DB[T]) FindNearestNeighborWithinRadius(x, y, radius float64, ignored T
 // Object is a proxy for a client (application) object in the spatial
 // database.
 //
-// One of these exists for each client object. This might be included within
+// One of these should be created for each client object. This might be included within
 // the structure of a client object, or could be allocated separately.
 type Object[T any] struct {
 	// Previous/next objects in this bin, or nil
