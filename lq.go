@@ -33,13 +33,13 @@
 //  p := NewObject(myObj).
 // When a client object moves, the application calls :
 //  p.Update()
-// To perform a query, DB.ForEachWithinRadisu is passed an
+// To perform a query, DB.ForEachWithinRadius is passed an
 // application-supplied ObjectFunc function to be applied to all client
 // objects in the locality. See ObjectFunc below for more detail.
 //  func myObjectFunc (myObj interface{}, sqDist float64) {
 //      // do something with myObj...
 //  }
-//  DB.ForEachWithinRadisu(x, y, radius, myObjectFunc, nil)
+//  DB.ForEachWithinRadius(x, y, radius, myObjectFunc, nil)
 // The DB.FindNearestNeighborWithinRadius function can be used to find a single
 // nearest neighbor using the database. Note that "locality query" is also
 // known as neighborhood query, neighborhood search, near neighbor search, and
@@ -146,7 +146,7 @@ func (db *DB[T]) Update(obj *Object[T], x, y float64) {
 type ObjectFunc[T any] func(obj T, sqDist float64)
 
 // ForEachObject applies a user-supplied function to all objects in the
-// database, regardless of locality (see DB.ForEachWithinRadisu)
+// database, regardless of locality (see DB.ForEachWithinRadius)
 func (db *DB[T]) ForEachObject(fn ObjectFunc[T]) {
 	bincount := db.xdiv * db.ydiv
 	for i := 0; i < bincount; i++ {
@@ -172,7 +172,7 @@ func (db *DB[T]) RemoveAllObjects() {
 	}
 }
 
-// This subroutine of ForEachWithinRadisu efficiently traverses a
+// This subroutine of ForEachWithinRadius efficiently traverses a
 // subset of bins specified by max and min bin coordinates.
 func (db *DB[T]) forEachObjectInLocalityClipped(x, y, radius float64, f ObjectFunc[T], xmin, ymin, xmax, ymax int) {
 	sqRadius := radius * radius
@@ -284,7 +284,7 @@ func (f *findNearest[T]) do(obj T, sqDist float64) {
 // an object from consideration. This is useful when looking for the nearest
 // neighbor of an object in the database, since otherwise it would be its own
 // nearest neighbor. The function returns the nearest object and true, or if
-// there was no object with the provided radisu, it returns the zero value of T,
+// there was no object with the provided radius, it returns the zero value of T,
 // and false.
 func (db *DB[T]) FindNearestNeighborWithinRadius(x, y, radius float64, ignored T) (T, bool) {
 	// Initialize search state
@@ -300,11 +300,10 @@ func (db *DB[T]) FindNearestNeighborWithinRadius(x, y, radius float64, ignored T
 	return fns.nearest, fns.found
 }
 
-// Object is a proxy for a client (application) object in the spatial
-// database.
+// Object is a proxy for a client (application) object in the spatial database.
 //
-// One of these should be created for each client object. This might be included within
-// the structure of a client object, or could be allocated separately.
+// One of these should be created for each client object. This might be included
+// within the structure of a client object, or could be allocated separately.
 type Object[T any] struct {
 	// Previous/next objects in this bin, or nil
 	prev, next *Object[T]
