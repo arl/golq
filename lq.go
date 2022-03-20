@@ -293,7 +293,7 @@ func (db *DB[T]) FindNearestNeighborWithinRadius(x, y, radius float64, ignored T
 		minSqDist: math.MaxFloat64,
 	}
 
-	// map search helper function over all objects within radius
+	// Map search helper function over all objects within radius.
 	db.ForEachWithinRadius(x, y, radius, fns.do)
 
 	// Return nearest object found, if any.
@@ -305,16 +305,16 @@ func (db *DB[T]) FindNearestNeighborWithinRadius(x, y, radius float64, ignored T
 // One of these should be created for each client object. This might be included
 // within the structure of a client object, or could be allocated separately.
 type Object[T any] struct {
-	// Previous/next objects in this bin, or nil
+	// Previous/next objects in this bin, or nil.
 	prev, next *Object[T]
 
-	// bin ID (pointer to pointer to bin contents list)
+	// Bin (pointer to pointer to bin contents list).
 	bin **Object[T]
 
-	// Client object interface
+	// Client object interface.
 	object T
 
-	// Object's location ("key point") used for spatial sorting
+	// Object's location ("key point") used for spatial sorting.
 	x, y float64
 }
 
@@ -329,7 +329,6 @@ func NewObject[T any](obj T) *Object[T] {
 // addToBin adds a given client object to a given bin, linking it into the bin
 // contents list.
 func (cp *Object[T]) addToBin(bin **Object[T]) {
-	// if bin is currently empty
 	if *bin == nil {
 		cp.prev = nil
 		cp.next = nil
@@ -341,14 +340,13 @@ func (cp *Object[T]) addToBin(bin **Object[T]) {
 		*bin = cp
 	}
 
-	// record bin ID in proxy object
 	cp.bin = bin
 }
 
 // RemoveFromBin removes a given client object from its current bin, unlinking
 // it from the bin contents list.
 func (cp *Object[T]) RemoveFromBin() {
-	// adjust pointers if object is currently in a bin
+	// Adjust pointers if object is currently in a bin
 	if cp.bin != nil {
 		// If this object is at the head of the list, move the bin
 		//  pointer to the next item in the list (might be nil).
@@ -395,7 +393,7 @@ func traverseBinWithinRadius[T comparable](cp *Object[T], x, y, sqRadius float64
 }
 
 func (cp *Object[T]) traverseBin(fn ObjectFunc[T]) {
-	// walk down proxy list, applying call-back function to each one
+	// Walk down proxy list, applying call-back function to each one.
 	for cp != nil {
 		fn(cp.object, 0)
 		cp = cp.next
