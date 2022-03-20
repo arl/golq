@@ -33,13 +33,13 @@
 //  p := NewObject(myObj).
 // When a client object moves, the application calls :
 //  p.Update()
-// To perform a query, DB.MapOverAllObjectsInLocality is passed an
+// To perform a query, DB.ForEachWithinRadisu is passed an
 // application-supplied ObjectFunc function to be applied to all client
 // objects in the locality. See ObjectFunc below for more detail.
 //  func myObjectFunc (myObj interface{}, sqDist float64) {
 //      // do something with myObj...
 //  }
-//  DB.MapOverAllObjectsInLocality(x, y, radius, myObjectFunc, nil)
+//  DB.ForEachWithinRadisu(x, y, radius, myObjectFunc, nil)
 // The DB.FindNearestNeighborWithinRadius function can be used to find a single
 // nearest neighbor using the database. Note that "locality query" is also
 // known as neighborhood query, neighborhood search, near neighbor search, and
@@ -146,7 +146,7 @@ func (db *DB[T]) Update(object *Object[T], x, y float64) {
 type ObjectFunc[T any] func(obj T, sqDist float64)
 
 // ForEachObject applies a user-supplied function to all objects in the
-// database, regardless of locality (see DB.MapOverAllObjectsInLocality)
+// database, regardless of locality (see DB.ForEachWithinRadisu)
 func (db *DB[T]) ForEachObject(fn ObjectFunc[T]) {
 	bincount := db.divx * db.divy
 	for i := 0; i < bincount; i++ {
@@ -172,7 +172,7 @@ func (db *DB[T]) RemoveAllObjects() {
 	}
 }
 
-// This subroutine of MapOverAllObjectsInLocality efficiently traverses a
+// This subroutine of ForEachWithinRadisu efficiently traverses a
 // subset of bins specified by max and min bin coordinates.
 func (db *DB[T]) forEachObjectInLocalityClipped(x, y, radius float64, f ObjectFunc[T], minBinX, minBinY, maxBinX, maxBinY int) {
 	sqRadius := radius * radius
@@ -325,8 +325,8 @@ func NewObject[T any](obj T) *Object[T] {
 	return &Object[T]{object: obj}
 }
 
-// addToBin adds a given client object to a given bin, linking it into the
-// bin contents list.
+// addToBin adds a given client object to a given bin, linking it into the bin
+// contents list.
 func (cp *Object[T]) addToBin(bin **Object[T]) {
 	// if bin is currently empty
 	if *bin == nil {

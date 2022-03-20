@@ -90,10 +90,11 @@ func BenchmarkBruteForce1000(b *testing.B) {
 
 func benchmarkNearestNeighbourLq(b *testing.B, numPts int, radius float64) {
 	// superbrick settings
-	orgx, orgy := 0.0, 0.0
-	szx, szy := 10.0, 10.0
-	divx, divy := 10, 10
-
+	const (
+		orgx, orgy = 0.0, 0.0
+		szx, szy   = 10.0, 10.0
+		divx, divy = 10, 10
+	)
 	src := rand.NewSource(seed)
 	rng := rand.New(src)
 
