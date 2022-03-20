@@ -152,20 +152,20 @@ func (db *DB[T]) binForLocation(x, y float64) **Object[T] {
 	return &(db.bins[db.coordsToIndex(ix, iy)])
 }
 
-// ObjectFunc is the function called, for each object, when mapping over a set
+// ObjectFunc is the function called, for each object, when iterating over a set
 // of objects. ObjectFunc gets called with the object in question and the
 // squared distance from the center of the search locality circle (x,y) to the
-// object's key-point.
+// object's key-point (when applicable).
 type ObjectFunc[T any] func(obj T, sqDist float64)
 
 // ForEachObject applies a user-supplied function to all objects in the
-// database, regardless of locality (see DB.ForEachWithinRadius)
-func (db *DB[T]) ForEachObject(fn ObjectFunc[T]) {
-	bincount := db.xdiv * db.ydiv
-	for i := 0; i < bincount; i++ {
-		db.bins[i].traverseBin(fn)
+// database, regardless of locality (see DB.ForEachWithinRadius). Since there's
+// no search locality, the squared distance argument to f is undefined.
+func (db *DB[T]) ForEachObject(f ObjectFunc[T]) {
+	for i := range db.bins {
+		db.bins[i].traverseBin(f)
 	}
-	db.other.traverseBin(fn)
+	db.other.traverseBin(f)
 }
 
 // DetachAll detaches all proxy objects.
@@ -220,7 +220,7 @@ func (db *DB[T]) forEachObjectOutside(x, y, radius float64, f ObjectFunc[T]) {
 //
 // The locality is specified as a circle with a given center and radius. All
 // objects whose location (key-point) is within this circle are identified and
-// the fn ObjectFunc function is applied to them. This method uses the lq
+// the f ObjectFunc function is applied to them. This method uses the lq
 // database to quickly reject any objects in bins which do not overlap with the
 // circle of interest. Incremental calculation of index values is used to
 // efficiently traverse the bins of interest.
