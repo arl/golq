@@ -230,7 +230,7 @@ func TestNearestNeighbor(t *testing.T) {
 			db.Attach(2, tt.p2x, tt.p2y)
 			db.Attach(3, tt.p3x, tt.p3y)
 
-			got, found := db.FindNearestNeighborWithinRadius(tt.cx, tt.cy, tt.cr, tt.ignore)
+			got, found := db.FindNearestInRadius(tt.cx, tt.cy, tt.cr, tt.ignore)
 			if found != tt.wantFound {
 				t.Errorf("found = %t, wantFound = %t", found, tt.wantFound)
 			}

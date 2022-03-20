@@ -108,7 +108,7 @@ func benchmarkNearestNeighbourLq(b *testing.B, numPts int, radius float64) {
 	for n := 0; n < b.N; n++ {
 		// Generate random query point
 		x, y := 10*rng.Float64(), 10*rng.Float64()
-		db.FindNearestNeighborWithinRadius(x, y, radius, ents[0])
+		db.FindNearestInRadius(x, y, radius, ents[0])
 	}
 }
 

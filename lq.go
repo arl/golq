@@ -269,28 +269,8 @@ func (db *DB[T]) ForEachWithinRadius(x, y, radius float64, f ObjectFunc[T]) {
 	db.forEachObjectInLocalityClipped(x, y, radius, f, minBinX, minBinY, maxBinX, maxBinY)
 }
 
-type findNearest[T comparable] struct {
-	ignored   T
-	nearest   T
-	minSqDist float64
-	found     bool
-}
-
-func (f *findNearest[T]) do(obj T, sqDist float64) {
-	if f.ignored == obj {
-		return
-	}
-
-	// Record this object if it is the nearest one so far.
-	if f.minSqDist > sqDist {
-		f.nearest = obj
-		f.minSqDist = sqDist
-		f.found = true
-	}
-}
-
-// FindNearestNeighborWithinRadius searches the database to find the object
-// whose key-point is nearest to a given location yet within a given radius.
+// FindNearestInRadius searches the database to find the object whose key-point
+// is nearest to a given location yet within a given radius.
 //
 // That is, it finds the object (if any) within a given search circle which is
 // nearest to the circle's center. The ignored argument can be used to exclude
@@ -299,18 +279,26 @@ func (f *findNearest[T]) do(obj T, sqDist float64) {
 // nearest neighbor. The function returns the nearest object and true, or if
 // there was no object with the provided radius, it returns the zero value of T,
 // and false.
-func (db *DB[T]) FindNearestNeighborWithinRadius(x, y, radius float64, ignored T) (T, bool) {
-	// Initialize search state
-	fns := findNearest[T]{
-		ignored:   ignored,
-		minSqDist: math.MaxFloat64,
-	}
+func (db *DB[T]) FindNearestInRadius(x, y, radius float64, ignored T) (T, bool) {
+	nearest := *new(T)
+	minSqDist := math.MaxFloat64
+	found := false
 
 	// Map search helper function over all objects within radius.
-	db.ForEachWithinRadius(x, y, radius, fns.do)
+	db.ForEachWithinRadius(x, y, radius, func(obj T, sqDist float64) {
+		if ignored == obj {
+			return
+		}
 
-	// Return nearest object found, if any.
-	return fns.nearest, fns.found
+		if sqDist < minSqDist {
+			// Update nearest
+			nearest = obj
+			minSqDist = sqDist
+			found = true
+		}
+	})
+
+	return nearest, found
 }
 
 // Object is a proxy for a client (application) object in the spatial database.
