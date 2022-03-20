@@ -57,15 +57,15 @@ import "math"
 // Typically one of these would be created (by a call to DB.NewDB)
 // for a given application.
 type DB[T comparable] struct {
-	orgx, orgy float64 // orgx and orgy are the super-brick corner minimum coordinates
+	xorg, yorg float64 // xorg and yorg are the super-brick corner minimum coordinates
 	szx, szy   float64 // length of the edges of the super-brick
-	divx, divy int     // number of sub-brick divisions in each direction
+	xdiv, ydiv int     // number of sub-brick divisions in each direction
 
 	// Actual bins, allocated in a 1D slice (use coordsToIndex to go from bin
 	// coordinates to index in this slice).
 	bins []*Object[T]
 
-	// extra bin for "everything else" (points outside super-brick)
+	// Extra bin for "everything else" (points outside super-brick).
 	other *Object[T]
 }
 
@@ -73,26 +73,26 @@ type DB[T comparable] struct {
 // object.
 //
 // The six parameters define the properties of the 'super-brick':
-//  - orgx/orgy: x/y coordinates of one corner of the super-brick, its minimum x
+//  - xorg/yorg: x/y coordinates of one corner of the super-brick, its minimum x
 //    and y extent.
-//  - sizex/sizey: the width and height of the super-brick.
-//  - divx/divy: the number of subdivisions (sub-bricks) along each axis.
-func NewDB[T comparable](orgx, orgy, sizex, sizey float64, divx, divy int) *DB[T] {
+//  - xsize/ysize: the width and height of the super-brick.
+//  - xdiv/ydiv: the number of subdivisions (sub-bricks) along each axis.
+func NewDB[T comparable](xorg, yorg, xsize, ysize float64, xdiv, divy int) *DB[T] {
 	return &DB[T]{
-		orgx: orgx,
-		orgy: orgy,
-		szx:  sizex,
-		szy:  sizey,
-		divx: divx,
-		divy: divy,
-		bins: make([]*Object[T], divx*divy),
+		xorg: xorg,
+		yorg: yorg,
+		szx:  xsize,
+		szy:  ysize,
+		xdiv: xdiv,
+		ydiv: divy,
+		bins: make([]*Object[T], xdiv*divy),
 	}
 }
 
 // coordsToIndex determines the index into linear bin array given 2D bin
 // indices
 func (db *DB[T]) coordsToIndex(ix, iy int) int {
-	return ix*db.divy + iy
+	return ix*db.ydiv + iy
 }
 
 // Find the bin ID for a location in space. The location is given in
@@ -100,22 +100,22 @@ func (db *DB[T]) coordsToIndex(ix, iy int) int {
 // to the bin contents list.
 func (db *DB[T]) binForLocation(x, y float64) **Object[T] {
 	// If point is outside the super-brick, return the 'other' bin.
-	if x < db.orgx {
+	if x < db.xorg {
 		return &(db.other)
 	}
-	if y < db.orgy {
+	if y < db.yorg {
 		return &(db.other)
 	}
-	if x >= db.orgx+db.szx {
+	if x >= db.xorg+db.szx {
 		return &(db.other)
 	}
-	if y >= db.orgy+db.szy {
+	if y >= db.yorg+db.szy {
 		return &(db.other)
 	}
 
 	// Point is inside the super brik, compute the bin coordinates and return that bin.
-	ix := int((x - db.orgx) / db.szx * float64(db.divx))
-	iy := int((y - db.orgy) / db.szy * float64(db.divy))
+	ix := int((x - db.xorg) / db.szx * float64(db.xdiv))
+	iy := int((y - db.yorg) / db.szy * float64(db.ydiv))
 	return &(db.bins[db.coordsToIndex(ix, iy)])
 }
 
@@ -124,18 +124,18 @@ func (db *DB[T]) binForLocation(x, y float64) **Object[T] {
 // It should be called for each client object every time its location
 // changes. For example, in an animation application, this would be called
 // each frame for every moving object.
-func (db *DB[T]) Update(object *Object[T], x, y float64) {
+func (db *DB[T]) Update(obj *Object[T], x, y float64) {
 	// find bin for new location
 	newBin := db.binForLocation(x, y)
 
 	// Store location in client object, for future reference.
-	object.x = x
-	object.y = y
+	obj.x = x
+	obj.y = y
 
 	// Has object's changed bin?
-	if newBin != object.bin {
-		object.RemoveFromBin()
-		object.addToBin(newBin)
+	if newBin != obj.bin {
+		obj.RemoveFromBin()
+		obj.addToBin(newBin)
 	}
 }
 
@@ -148,7 +148,7 @@ type ObjectFunc[T any] func(obj T, sqDist float64)
 // ForEachObject applies a user-supplied function to all objects in the
 // database, regardless of locality (see DB.ForEachWithinRadisu)
 func (db *DB[T]) ForEachObject(fn ObjectFunc[T]) {
-	bincount := db.divx * db.divy
+	bincount := db.xdiv * db.ydiv
 	for i := 0; i < bincount; i++ {
 		db.bins[i].traverseBin(fn)
 	}
@@ -174,20 +174,20 @@ func (db *DB[T]) RemoveAllObjects() {
 
 // This subroutine of ForEachWithinRadisu efficiently traverses a
 // subset of bins specified by max and min bin coordinates.
-func (db *DB[T]) forEachObjectInLocalityClipped(x, y, radius float64, f ObjectFunc[T], minBinX, minBinY, maxBinX, maxBinY int) {
+func (db *DB[T]) forEachObjectInLocalityClipped(x, y, radius float64, f ObjectFunc[T], xmin, ymin, xmax, ymax int) {
 	sqRadius := radius * radius
 
 	// Loop for x bins across diameter of circle.
-	idx := minBinX * db.divy
-	for i := minBinX; i <= maxBinX; i++ {
+	idx := xmin * db.ydiv
+	for i := xmin; i <= xmax; i++ {
 		// Loop for y bins across diameter of circle.
-		jdx := minBinY
-		for j := minBinY; j <= maxBinY; j++ {
+		jdx := ymin
+		for j := ymin; j <= ymax; j++ {
 			// Traverse current bin's client object list.
 			traverseBinWithinRadius(db.bins[idx+jdx], x, y, sqRadius, f)
 			jdx++
 		}
-		idx += db.divy
+		idx += db.ydiv
 	}
 }
 
@@ -213,8 +213,8 @@ func (db *DB[T]) forEachObjectOutside(x, y, radius float64, f ObjectFunc[T]) {
 // efficiently traverse the bins of interest.
 func (db *DB[T]) ForEachWithinRadius(x, y, radius float64, f ObjectFunc[T]) {
 	partlyOut := false
-	completelyOutside := x+radius < db.orgx || y+radius < db.orgy ||
-		x-radius >= db.orgx+db.szx || y-radius >= db.orgy+db.szy
+	completelyOutside := x+radius < db.xorg || y+radius < db.yorg ||
+		x-radius >= db.xorg+db.szx || y-radius >= db.yorg+db.szy
 
 	// is the circle completely outside the "super brick"?
 	if completelyOutside {
@@ -222,10 +222,10 @@ func (db *DB[T]) ForEachWithinRadius(x, y, radius float64, f ObjectFunc[T]) {
 	}
 
 	// compute min and max bin coordinates for each dimension
-	minBinX := int(float64(db.divx) * (x - radius - db.orgx) / db.szx)
-	minBinY := int(float64(db.divy) * (y - radius - db.orgy) / db.szy)
-	maxBinX := int(float64(db.divx) * (x + radius - db.orgx) / db.szx)
-	maxBinY := int(float64(db.divy) * (y + radius - db.orgy) / db.szy)
+	minBinX := int(float64(db.xdiv) * (x - radius - db.xorg) / db.szx)
+	minBinY := int(float64(db.ydiv) * (y - radius - db.yorg) / db.szy)
+	maxBinX := int(float64(db.xdiv) * (x + radius - db.xorg) / db.szx)
+	maxBinY := int(float64(db.ydiv) * (y + radius - db.yorg) / db.szy)
 
 	// clip bin coordinates
 	if minBinX < 0 {
@@ -236,13 +236,13 @@ func (db *DB[T]) ForEachWithinRadius(x, y, radius float64, f ObjectFunc[T]) {
 		partlyOut = true
 		minBinY = 0
 	}
-	if maxBinX >= db.divx {
+	if maxBinX >= db.xdiv {
 		partlyOut = true
-		maxBinX = db.divx - 1
+		maxBinX = db.xdiv - 1
 	}
-	if maxBinY >= db.divy {
+	if maxBinY >= db.ydiv {
 		partlyOut = true
-		maxBinY = db.divy - 1
+		maxBinY = db.ydiv - 1
 	}
 
 	// map function over outside objects if necessary (if clipped)
