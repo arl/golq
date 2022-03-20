@@ -9,21 +9,14 @@ import (
 
 // Benchmarks
 
-const (
-	seed = 436784 // rng seed
-)
+const seed = 436784 // rng seed
 
-// global dummy variable to avoid optimization (see uses)
-var dummy float64
+// global sink variable to avoid optimization (see uses)
+var sink float64
 
 type benchEntity struct {
 	ID   int
 	x, y float64
-}
-
-// create the bench client proxy
-func newProxyEntity(ent benchEntity) *lq.ClientProxy {
-	return lq.NewClientProxy(ent)
 }
 
 func randomNEntities(b *testing.B, src rand.Source, numPoints int) []benchEntity {
@@ -62,7 +55,7 @@ func benchmarkBruteForce(b *testing.B, numPts int) {
 		for _, ent := range ents {
 			// compute the squared distance and assigns it to not let the
 			// compiler optimize it away.
-			dummy = (x-ent.x)*(x-ent.x) + (y-ent.y)*(y-ent.y)
+			sink = (x-ent.x)*(x-ent.x) + (y-ent.y)*(y-ent.y)
 		}
 	}
 }
@@ -97,24 +90,25 @@ func BenchmarkBruteForce1000(b *testing.B) {
 
 func benchmarkNearestNeighbourLq(b *testing.B, numPts int, radius float64) {
 	// superbrick settings
-	orgx, orgy := 0.0, 0.0
-	szx, szy := 10.0, 10.0
-	divx, divy := 10, 10
-
+	const (
+		orgx, orgy = 0.0, 0.0
+		szx, szy   = 10.0, 10.0
+		divx, divy = 10, 10
+	)
 	src := rand.NewSource(seed)
 	rng := rand.New(src)
 
 	// create and fill the database
 	ents := randomNEntities(b, src, numPts)
-	db := lq.CreateDatabase(orgx, orgy, szx, szy, divx, divy)
+	db := lq.NewDB[benchEntity](orgx, orgy, szx, szy, divx, divy)
 	for _, ent := range ents {
-		db.UpdateForNewLocation(newProxyEntity(ent), ent.x, ent.y)
+		db.Attach(ent, ent.x, ent.y)
 	}
 
 	for n := 0; n < b.N; n++ {
-		// generate random query point
+		// Generate random query point
 		x, y := 10*rng.Float64(), 10*rng.Float64()
-		db.FindNearestNeighborWithinRadius(x, y, radius, nil)
+		db.FindNearestInRadius(x, y, radius, ents[0])
 	}
 }
 
@@ -179,16 +173,15 @@ func benchmarkObjectsInLocalityLq(b *testing.B, numPts int, radius float64) {
 
 	// create and fill the database
 	ents := randomNEntities(b, src, numPts)
-	db := lq.CreateDatabase(orgx, orgy, szx, szy, divx, divy)
+	db := lq.NewDB[benchEntity](orgx, orgy, szx, szy, divx, divy)
 	for _, ent := range ents {
-		db.UpdateForNewLocation(newProxyEntity(ent), ent.x, ent.y)
+		db.Attach(ent, ent.x, ent.y)
 	}
 
-	dummyCallback := func(clientObj interface{}, distSquare float64, queryState interface{}) {}
 	for n := 0; n < b.N; n++ {
 		// generate random query point
 		x, y := 10*rng.Float64(), 10*rng.Float64()
-		db.MapOverAllObjectsInLocality(x, y, radius, dummyCallback, nil)
+		db.ForEachWithinRadius(x, y, radius, func(_ benchEntity, _ float64) {})
 	}
 }
 
