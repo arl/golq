@@ -1,6 +1,6 @@
 // Package lq implements a spatial database which stores objects each of which
-// is associated with a 2D point (a location in a 2D space). The points serve
-// as the "search key" for the associated object. It is intended to efficiently
+// is associated with a 2D point (a location in a 2D space). The points serve as
+// the "search key" for the associated object. It is intended to efficiently
 // answer "circle inclusion" queries, also known as "range queries": basically
 // questions like:
 //
@@ -25,25 +25,29 @@
 // provided by the spatial subdivision. For more details about how to specify
 // the super-brick's position, size and subdivisions see NewDB below.
 //
-// Overview of usage: an application using this facility would first create a
-// database with:
-//  db := NewDBabase().
-// For each client object the application wants to put in the database it
-// creates an Object with :
-//  p := NewObject(myObj).
-// When a client object moves, the application calls :
-//  p.Update()
-// To perform a query, DB.ForEachWithinRadius is passed an
-// application-supplied ObjectFunc function to be applied to all client
-// objects in the locality. See ObjectFunc below for more detail.
-//  func myObjectFunc (myObj interface{}, sqDist float64) {
-//      // do something with myObj...
+// Overview of usage: an application using this facility to perform locality
+// queries over objects of type myStruct would first create a database with:
+//  db := NewDB[myObject]()
+// Then, call Attach for each objects to attach to the database. Attach returns
+// a 'proxy' object, which is a link between the user object and its
+// representation in the locality database.
+//  p := db.Attach(obj)
+// When a client object moves, the application calls Update with the new
+// location. Update is a method of the lq.Proxy object, that's why the the proxy
+// object is generally kept within the user object, though it can be managed
+// separately:
+//  db.Update(123, 456)
+// To perform a query, DB.ForEachWithinRadius is passed a user function which
+// will be called for all client objects in the locality. See Func below for
+// more detail.
+//  func myFunc(obj T, sqDist float64) {
+//      // do something with obj
 //  }
-//  DB.ForEachWithinRadius(x, y, radius, myObjectFunc, nil)
-// The DB.FindNearestNeighborWithinRadius function can be used to find a single
-// nearest neighbor using the database. Note that "locality query" is also
-// known as neighborhood query, neighborhood search, near neighbor search, and
-// range query.
+//  DB.ForEachWithinRadius(x, y, radius, myFunc, nil)
+// The DB.FindNearestInRadius function can be used to find a single nearest
+// neighbor using the database. Note that "locality query" is also known as
+// neighborhood query, neighborhood search, near neighbor search, and range
+// query.
 //
 // Author: Aurélien Rainone
 //
@@ -63,10 +67,10 @@ type DB[T comparable] struct {
 
 	// Actual bins, allocated in a 1D slice (use coordsToIndex to go from bin
 	// coordinates to index in this slice).
-	bins []*Object[T]
+	bins []*Proxy[T]
 
 	// Extra bin for "everything else" (points outside super-brick).
-	other *Object[T]
+	other *Proxy[T]
 }
 
 // NewDB creates a new database, allocates the bin array, and returns the DB
@@ -85,29 +89,29 @@ func NewDB[T comparable](xorg, yorg, xsize, ysize float64, xdiv, divy int) *DB[T
 		szy:  ysize,
 		xdiv: xdiv,
 		ydiv: divy,
-		bins: make([]*Object[T], xdiv*divy),
+		bins: make([]*Proxy[T], xdiv*divy),
 	}
 }
 
 // Attach attaches a new object to the database and returns a proxy object.
-func (db *DB[T]) Attach(t T, x, y float64) *Object[T] {
-	obj := &Object[T]{object: t}
+func (db *DB[T]) Attach(t T, x, y float64) *Proxy[T] {
+	obj := &Proxy[T]{object: t}
 	db.Update(obj, x, y)
 	return obj
 }
 
-// Detach detaches the given object from the database.
-func (db *DB[T]) Detach(obj *Object[T]) {
+// Detach detaches the given proxy object from the database.
+func (db *DB[T]) Detach(obj *Proxy[T]) {
 	obj.removeFromBin()
 	return
 }
 
-// Update updates a proxy object position in the database.
+// Update updates the location of a proxy object in the database.
 //
-// It should be called for each client object every time its location
-// changes. For example, in an animation application, this would be called
-// each frame for every moving object.
-func (db *DB[T]) Update(obj *Object[T], x, y float64) {
+// It should be called for each client object every time its location changes.
+// For example, in an animation application, this would be called each frame for
+// every moving object.
+func (db *DB[T]) Update(obj *Proxy[T], x, y float64) {
 	// find bin for new location
 	newBin := db.binForLocation(x, y)
 
@@ -131,7 +135,7 @@ func (db *DB[T]) coordsToIndex(ix, iy int) int {
 // Find the bin ID for a location in space. The location is given in
 // terms of its XY coordinates. The bin ID is a pointer to a pointer
 // to the bin contents list.
-func (db *DB[T]) binForLocation(x, y float64) **Object[T] {
+func (db *DB[T]) binForLocation(x, y float64) **Proxy[T] {
 	// If point is outside the super-brick, return the 'other' bin.
 	if x < db.xorg {
 		return &(db.other)
@@ -152,23 +156,23 @@ func (db *DB[T]) binForLocation(x, y float64) **Object[T] {
 	return &(db.bins[db.coordsToIndex(ix, iy)])
 }
 
-// ObjectFunc is the function called, for each object, when iterating over a set
-// of objects. ObjectFunc gets called with the object in question and the
-// squared distance from the center of the search locality circle (x,y) to the
-// object's key-point (when applicable).
-type ObjectFunc[T any] func(obj T, sqDist float64)
+// Func is the function called, for each proxy object, when iterating over a set
+// of proxies. Func gets called with the object in question and the squared
+// distance from the center of the search locality circle (x,y) to the object's
+// key-point (when applicable).
+type Func[T any] func(obj T, sqDist float64)
 
 // ForEachObject applies a user-supplied function to all objects in the
 // database, regardless of locality (see DB.ForEachWithinRadius). Since there's
 // no search locality, the squared distance argument to f is undefined.
-func (db *DB[T]) ForEachObject(f ObjectFunc[T]) {
+func (db *DB[T]) ForEachObject(f Func[T]) {
 	for i := range db.bins {
 		db.bins[i].traverseBin(f)
 	}
 	db.other.traverseBin(f)
 }
 
-// DetachAll detaches all proxy objects.
+// DetachAll detaches all proxy objects from the database.
 func (db *DB[T]) DetachAll() {
 	for i := range db.bins {
 		pbin := &(db.bins[i])
@@ -187,7 +191,7 @@ func (db *DB[T]) DetachAll() {
 
 // This subroutine of ForEachWithinRadius efficiently traverses a
 // subset of bins specified by max and min bin coordinates.
-func (db *DB[T]) forEachObjectInLocalityClipped(x, y, radius float64, f ObjectFunc[T], xmin, ymin, xmax, ymax int) {
+func (db *DB[T]) forEachInRadiusClipped(x, y, radius float64, f Func[T], xmin, ymin, xmax, ymax int) {
 	sqRadius := radius * radius
 
 	// Loop for x bins across diameter of circle.
@@ -207,12 +211,9 @@ func (db *DB[T]) forEachObjectInLocalityClipped(x, y, radius float64, f ObjectFu
 // If the query region (sphere) extends outside of the "super-brick"
 // we need to check for objects in the catch-all "other" bin which
 // holds any object which are not inside the regular sub-bricks
-func (db *DB[T]) forEachObjectOutside(x, y, radius float64, f ObjectFunc[T]) {
-	co := db.other
-	sqRadius := radius * radius
-
+func (db *DB[T]) forEachObjectOutside(x, y, radius float64, f Func[T]) {
 	// traverse the "other" bin's client object list
-	traverseBinWithinRadius(co, x, y, sqRadius, f)
+	traverseBinWithinRadius(db.other, x, y, radius*radius, f)
 }
 
 // ForEachWithinRadius applies an application-specific ObjectFunc to all objects
@@ -224,7 +225,7 @@ func (db *DB[T]) forEachObjectOutside(x, y, radius float64, f ObjectFunc[T]) {
 // database to quickly reject any objects in bins which do not overlap with the
 // circle of interest. Incremental calculation of index values is used to
 // efficiently traverse the bins of interest.
-func (db *DB[T]) ForEachWithinRadius(x, y, radius float64, f ObjectFunc[T]) {
+func (db *DB[T]) ForEachWithinRadius(x, y, radius float64, f Func[T]) {
 	partlyOut := false
 	completelyOutside := x+radius < db.xorg ||
 		y+radius < db.yorg ||
@@ -266,7 +267,7 @@ func (db *DB[T]) ForEachWithinRadius(x, y, radius float64, f ObjectFunc[T]) {
 	}
 
 	// Map function over objects in bins
-	db.forEachObjectInLocalityClipped(x, y, radius, f, minBinX, minBinY, maxBinX, maxBinY)
+	db.forEachInRadiusClipped(x, y, radius, f, minBinX, minBinY, maxBinX, maxBinY)
 }
 
 // FindNearestInRadius searches the database to find the object whose key-point
@@ -301,16 +302,16 @@ func (db *DB[T]) FindNearestInRadius(x, y, radius float64, ignored T) (T, bool) 
 	return nearest, found
 }
 
-// Object is a proxy for a client (application) object in the spatial database.
+// Proxy is a proxy for a client (application) object in the spatial database.
 //
 // One of these should be created for each client object. This might be included
 // within the structure of a client object, or could be allocated separately.
-type Object[T any] struct {
+type Proxy[T any] struct {
 	// Previous/next objects in this bin, or nil.
-	prev, next *Object[T]
+	prev, next *Proxy[T]
 
 	// Bin (pointer to pointer to bin contents list).
-	bin **Object[T]
+	bin **Proxy[T]
 
 	// Client object interface.
 	object T
@@ -321,7 +322,7 @@ type Object[T any] struct {
 
 // addToBin adds a given client object to a given bin, linking it into the bin
 // contents list.
-func (cp *Object[T]) addToBin(bin **Object[T]) {
+func (cp *Proxy[T]) addToBin(bin **Proxy[T]) {
 	if *bin == nil {
 		cp.prev = nil
 		cp.next = nil
@@ -338,7 +339,7 @@ func (cp *Object[T]) addToBin(bin **Object[T]) {
 
 // removeFromBin removes a given client object from its current bin, unlinking
 // it from the bin contents list.
-func (cp *Object[T]) removeFromBin() {
+func (cp *Proxy[T]) removeFromBin() {
 	// Adjust pointers if object is currently in a bin
 	if cp.bin != nil {
 		// If this object is at the head of the list, move the bin
@@ -369,7 +370,7 @@ func (cp *Object[T]) removeFromBin() {
 // Given a bin's list of client proxies, traverse the list and invoke
 // the given ObjectFunc on each object that falls within the
 // search radius.
-func traverseBinWithinRadius[T comparable](cp *Object[T], x, y, sqRadius float64, fn ObjectFunc[T]) {
+func traverseBinWithinRadius[T comparable](cp *Proxy[T], x, y, sqRadius float64, fn Func[T]) {
 	for cp != nil {
 		// compute distance (squared) from this client
 		// object to given locality circle's centerpoint
@@ -385,7 +386,7 @@ func traverseBinWithinRadius[T comparable](cp *Object[T], x, y, sqRadius float64
 	}
 }
 
-func (cp *Object[T]) traverseBin(fn ObjectFunc[T]) {
+func (cp *Proxy[T]) traverseBin(fn Func[T]) {
 	// Walk down proxy list, applying call-back function to each one.
 	for cp != nil {
 		fn(cp.object, 0)
